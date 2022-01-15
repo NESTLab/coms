@@ -1,0 +1,17 @@
+version: '2'
+services:
+  novnc:
+    build: .
+    volumes:
+      - .:/root/catkin_ws/src
+    environment:
+      # Adjust to your screen size
+      - DISPLAY_WIDTH=1366
+      - DISPLAY_HEIGHT=768
+      - RUN_XTERM=no
+    ports:
+      - "8080:8080"
+    networks:
+      - x11
+networks:
+  x11:
