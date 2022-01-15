@@ -1,0 +1,4 @@
+[build-system]
+requires = [
+    "numpy==1.21.4"
+]

@@ -28,7 +28,8 @@ RUN set -ex; \
       supervisor \
       x11vnc \
       xterm \
-      xvfb; \
+      xvfb \
+      python3-pip; \
     git clone https://github.com/theasp/docker-novnc.git /app;
 
 # Install ROS

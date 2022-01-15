@@ -1,0 +1,1 @@
+# from coms.<file> import *
