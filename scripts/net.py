@@ -19,19 +19,16 @@ parser.add_argument('-env',
 def get_run_args() -> Dict:
     NODE_NAMESPACE = rospy.get_namespace()
     NODE_NAME = rospy.get_name()
-    try:
-        # Fetch arguments from command line
-        # Usefull when calling: rosrun coms net
-        args, unknown = parser.parse_known_args()
-        NODE_IP = args.ip
-        NODE_ENVIRONMENT = args.env
-        if len(unknown) == 0 and args.env is None or args.ip is None:
-            parser.print_usage()
-            sys.exit(1)
-    except AttributeError:
+
+    args, unknown = parser.parse_known_args()
+    if len(unknown) > 0:
         # Fetch arguments from launch file
         NODE_IP = rospy.get_param("/ip", "")
         NODE_ENVIRONMENT = rospy.get_param("/environment", "")
+    else:
+        NODE_IP = args.ip
+        NODE_ENVIRONMENT = args.env
+
     # Validate all runtime arguments
     if (NODE_NAMESPACE == "" or NODE_NAME == "" or NODE_ENVIRONMENT == "" or NODE_IP == "" or
             (NODE_ENVIRONMENT != "sim" and NODE_ENVIRONMENT != "pi")):
