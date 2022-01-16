@@ -12,6 +12,7 @@ parser.add_argument('-ip',
                     help='unique static IP for ROS node')
 parser.add_argument('-env',
                     type=str,
+                    choices=['pi', 'sim'],
                     help='deployment environment [ pi | sim ]')
 
 
@@ -21,15 +22,18 @@ def get_run_args() -> Dict:
     try:
         # Fetch arguments from command line
         # Usefull when calling: rosrun coms net
-        parser.parse_known_args()
-        NODE_IP = parser.ip
-        NODE_ENVIRONMENT = parser.env
+        args, unknown = parser.parse_known_args()
+        NODE_IP = args.ip
+        NODE_ENVIRONMENT = args.env
+        if len(unknown) == 0 and args.env is None or args.ip is None:
+            parser.print_usage()
+            sys.exit(1)
     except AttributeError:
         # Fetch arguments from launch file
         NODE_IP = rospy.get_param("/ip", "")
         NODE_ENVIRONMENT = rospy.get_param("/environment", "")
     # Validate all runtime arguments
-    if NODE_NAMESPACE == "" or NODE_NAME == "" or NODE_ENVIRONMENT == "" or NODE_IP == "":
+    if NODE_NAMESPACE == "" or NODE_NAME == "" or NODE_ENVIRONMENT == "" or NODE_IP == "" or (NODE_ENVIRONMENT != "sim" and NODE_ENVIRONMENT != "pi"):
         print("Invalid command line or launch arguments.", file=sys.stderr)
         parser.print_usage()
         sys.exit(1)
