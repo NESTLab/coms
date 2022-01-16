@@ -1,0 +1,3 @@
+[submodule "ros-net-sim"]
+	path = ros-net-sim
+	url = https://github.com/tylerferrara/ros-net-sim.git
