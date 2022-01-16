@@ -33,7 +33,8 @@ def get_run_args() -> Dict:
         NODE_IP = rospy.get_param("/ip", "")
         NODE_ENVIRONMENT = rospy.get_param("/environment", "")
     # Validate all runtime arguments
-    if NODE_NAMESPACE == "" or NODE_NAME == "" or NODE_ENVIRONMENT == "" or NODE_IP == "" or (NODE_ENVIRONMENT != "sim" and NODE_ENVIRONMENT != "pi"):
+    if (NODE_NAMESPACE == "" or NODE_NAME == "" or NODE_ENVIRONMENT == "" or NODE_IP == "" or
+            (NODE_ENVIRONMENT != "sim" and NODE_ENVIRONMENT != "pi")):
         print("Invalid command line or launch arguments.", file=sys.stderr)
         parser.print_usage()
         sys.exit(1)
@@ -63,6 +64,15 @@ def main() -> None:
     print_run_args(args)
     # Set fixed update-rate in Hz
     rospy.Rate(float(rospy.get_param('~rate', '2.0')))
+    # TODO: Unblock PI environment (when supported)
+    if args["NODE_ENVIRONMENT"] != "sim":
+        print("\nEnvironment {} => NOT YET SUPPORTED\n\n".format(args["NODE_ENVIRONMENT"]))
+        resp = input("Switch to SIM? (y/n) : ")
+        if resp != 'y':
+            print("Exiting...")
+            sys.exit(0)
+        args["NODE_ENVIRONMENT"] = "sim"
+        print_run_args(args)
 
 
 if __name__ == "__main__":
