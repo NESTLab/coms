@@ -22,6 +22,10 @@ This assumes all nodes are running on the same host machine. In this case, there
 Coms also deploys a physics simulator that analyses the environment of the robots to control network reliability. Currently, this is implemented with a rudimentary form of collision detection and proximity. However, feel free to read the docs of the project this was forked from, [ROSNetSim](https://arxiv.org/pdf/2101.10113.pdf), for guidance in implementing more sophisticated raytracing.
 
 ## Usage 🛠
+
+### For Simulation Environments:
+
+
 It's recommended to attach a Coms node to every Robot that wishes to communicate with the network. In ROS, this means adding it to your launch file.
 ```launch
 <launch>
@@ -33,7 +37,7 @@ It's recommended to attach a Coms node to every Robot that wishes to communicate
  </node>
 <launch>
 ```
-Alternatively, you can manually run Coms as a script
+Alternatively, you can manually run Coms as a script which
 ```zsh
 rosrun coms main.py --environment=[ pi | sim ] --ip=192.168.0.5
 ```

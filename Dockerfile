@@ -41,11 +41,7 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
     apt-get install -y python3-rosdep python3-rosinstall ros-noetic-turtlebot3 ros-noetic-dwa-local-planner ros-noetic-gmapping ros-noetic-rviz python3-rosinstall-generator python3-wstool build-essential python3-rosdep;
 
 # Install Gazebo
-RUN sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'; \
-    wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -; \
-    apt-get update; \
-    apt-get install -y gazebo11 libgazebo11-dev; \
-    echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc; \
+RUN wget -O /tmp/gazebo5_install.sh http://osrf-distributions.s3.amazonaws.com/gazebo/gazebo5_install.sh; sudo sh /tmp/gazebo5_install.sh; \
     echo "export TURTLEBOT3_MODEL=burger" >> ~/.bashrc;
 
 # Build ARGos3 from source
@@ -63,11 +59,13 @@ RUN apt-get install -y cmake libfreeimage-dev libfreeimageplus-dev \
   echo "sudo ldconfig" >> ~/.bashrc; \
   make install;
 
-# Install project dependencies
-RUN rosdep init; \
-  rosdep update; \
-  echo "rosdep install --from-paths /root/catkin_ws/src --rosdistro noetic -y" >> ~/.bashrc; \
-  echo "cd /root/catkin_ws" >> ~/.bashrc;
+# Install extra dependencies
+RUN pip3 install pyquaternion; \
+  sudo apt-get install -y ros-noetic-catkin python3-catkin-tools; \
+  mkdir -p /root/catkin_ws/src; \
+  echo "cd /root/catkin_ws;" >> ~/.bashrc;
+
+COPY ./entrypoint.sh /app/entrypoint.sh
 
 EXPOSE 8080
 
