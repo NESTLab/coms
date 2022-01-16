@@ -1,3 +1,8 @@
 <launch>
-    <node name="coms_net" pkg="coms" type="net.py" output="screen"/>
+    <group ns="/network">
+        <node name="coms_net" pkg="coms" type="net.py" output="screen">
+            <param name="environment" value="sim" />
+            <param name="ip" value="192.168.1.1" />
+        </node>
+    </group>
 </launch>
