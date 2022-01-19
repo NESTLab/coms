@@ -18,9 +18,6 @@ esac
 
 # Obtain ROS environment variables
 source /opt/ros/noetic/setup.bash
-# Update dependencies
-rosdep init
-rosdep update
 # Install ROS Packages
 rosdep install -i --from-path /root/catkin_ws/src --rosdistro $ROS_DISTRO -y
 # Enforce C++ language standard

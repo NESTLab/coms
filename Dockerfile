@@ -61,7 +61,9 @@ RUN apt-get install -y cmake libfreeimage-dev libfreeimageplus-dev \
 
 # Install extra dependencies
 RUN pip3 install pyquaternion; \
-  sudo apt-get install -y ros-noetic-catkin python3-catkin-tools; \
+  sudo apt-get install -y iproute2 ros-noetic-catkin python3-catkin-tools; \
+  rosdep init; \
+  rosdep update; \
   mkdir -p /root/catkin_ws/src; \
   echo "cd /root/catkin_ws;" >> ~/.bashrc;
 

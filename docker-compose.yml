@@ -9,6 +9,12 @@ services:
       - DISPLAY_WIDTH=1366
       - DISPLAY_HEIGHT=768
       - RUN_XTERM=no
+    cap_add:
+      - NET_ADMIN
+    devices:
+    - "/dev/net/tun:/dev/net/tun"
+    - /dev/null:/dev/null
+    privileged: true
     ports:
       - "8080:8080"
     networks:
