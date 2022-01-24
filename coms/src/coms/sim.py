@@ -1,11 +1,10 @@
 from __future__ import annotations
-from ast import arg
 import time
 import socket
 import threading
 from subprocess import Popen, check_output, DEVNULL, call
 from typing import List, Tuple
-from coms.constants import BROADCASTER_PORT, LISTENER_PORT, MAX_CLIENTS, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, NET_CONFIG, DISCOVERABLE_TIMEOUT
+from coms.constants import BROADCASTER_PORT, LISTENER_PORT, MAX_CLIENTS, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, NET_CONFIG, DISCOVERABLE_TIMEOUT # noqa: E501
 from coms.utils import writable, readable, get_ip_list
 
 

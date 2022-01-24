@@ -1,10 +1,8 @@
 import unittest
-from subprocess import call, check_output
+from subprocess import call
 from typing import List
 import socket
-import sys
-import time
-from coms.sim import Sim, remove_net_tunnel, gen_bound_socket, is_sim_network_running, launch_sim_network, terminate_sim_network, get_device_numbers
+from coms.sim import Sim, gen_bound_socket, is_sim_network_running, launch_sim_network, terminate_sim_network, get_device_numbers # noqa: E501
 from coms.constants import BROADCASTER_PORT, LISTENER_PORT
 
 
