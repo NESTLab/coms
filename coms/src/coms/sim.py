@@ -6,6 +6,8 @@ from subprocess import Popen, check_output, DEVNULL, call
 from typing import List, Tuple
 from coms.constants import BROADCASTER_PORT, LISTENER_PORT, MAX_CLIENTS, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, NET_CONFIG, DISCOVERABLE_TIMEOUT # noqa: E501
 from coms.utils import writable, readable, get_ip_list
+import roslaunch
+import rospy
 
 
 class Sim():
@@ -17,17 +19,19 @@ class Sim():
     stay_alive: bool = True
     threads: List[threading.Thread] = []
     kill_thread_event: threading.Event = threading.Event()
-    NET_PROC: Popen = None
+    NET_PROC: roslaunch.parent.ROSLaunchParent = None
+    NET_SIM_LAUNCH_FILE: str = ""
 
-    def __init__(self: Sim, listen_address: str, broadcast_address: str) -> None:
+    def __init__(self: Sim, listen_address: str, broadcast_address: str, net_sim_launch_file: str) -> None:
         path_to_config = check_output("find {0} -type f -name '{1}'".format(CATKIN_WS, NET_CONFIG), shell=True)
         self.LOCAL_IPS = get_ip_list(path_to_config.decode(ENCODING).strip())
         self.L_ADDRESS = listen_address
         self.B_ADDRESS = broadcast_address
+        self.NET_SIM_LAUNCH_FILE = net_sim_launch_file
 
     def start(self: Sim) -> None:
-        if not is_sim_network_running():
-            self.NET_PROC = launch_sim_network()
+        if not is_sim_network_running(self.LOCAL_IPS):
+            self.NET_PROC = launch_sim_network(self.NET_SIM_LAUNCH_FILE, self.LOCAL_IPS)
 
         self.threads = []
         self.threads.append(threading.Thread(
@@ -39,7 +43,7 @@ class Sim():
     def stop(self: Sim) -> None:
         self._stop_threads()
         if self.NET_PROC is not None:
-            terminate_sim_network(self.NET_PROC)
+            terminate_sim_network(self.NET_PROC, self.LOCAL_IPS)
 
     def _start_threads(self: Sim) -> None:
         for t in self.threads:
@@ -100,34 +104,39 @@ class Sim():
         return neighbors
 
 
-def is_sim_network_running() -> bool:
-    return len(get_device_numbers()) > 0
+def is_sim_network_running(local_ips: List[str]) -> bool:
+    num_devs = len(local_ips)
+    out = str(check_output(["sudo", "-S", "ip", "rule", "list"]))
+    if out.count('lookup') != num_devs * 2 + 3 or len(get_device_numbers()) != num_devs:
+        return False
+    # Ensure all ips are present
+    for ip in local_ips:
+        if out.count(ip) != 1:
+            return False
+    return True
 
 
-# Returns PID of the launch process
-def launch_sim_network() -> Popen:
-    ros_setup_script = "/opt/ros/noetic/setup.sh"
-    devel_setup_script = CATKIN_WS + "/devel/setup.sh"
-    command = "roslaunch example gazebo.launch"
-    # This launch file explicitly creates 3 network devices
-    cmd = "sh {0} && sh {1} && {2}".format(ros_setup_script, devel_setup_script, command)
-    proc = Popen(cmd, stdout=DEVNULL, stderr=DEVNULL, shell=True)
-    # Wait for the OS to create all network devices
-    while not is_sim_network_running():
-        time.sleep(0.1)
-    return proc
+# Returns ROS launch parent
+def launch_sim_network(launch_file: str, local_ips: List[str]) -> roslaunch.parent.ROSLaunchParent:
+    uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
+    roslaunch.configure_logging(uuid)
+    launch = roslaunch.parent.ROSLaunchParent(
+        uuid,
+        [launch_file],
+        force_log=True)
+    launch.start()
+    while not is_sim_network_running(local_ips):
+        time.sleep(0.05)
+    return launch
 
 
-def terminate_sim_network(proc: Popen) -> None:
-    while is_sim_network_running():
-        while len(get_device_numbers()) != 0:
-            devices = get_device_numbers()
-            print(devices)
-            proc.kill()
-            for dev in devices:
-                remove_net_tunnel(dev)
-        remove_net_rules()
-        time.sleep(0.1)
+def terminate_sim_network(launch: roslaunch.parent.ROSLaunchParent, local_ips: List[str]) -> None:
+    launch.shutdown()
+    for i in get_device_numbers():
+        remove_net_tunnel(i)
+    remove_net_rules()
+    while is_sim_network_running(local_ips):
+        time.sleep(0.05)
 
 
 def get_device_numbers() -> List[int]:
@@ -153,7 +162,7 @@ def remove_net_rules() -> None:
 
 
 def gen_bound_socket(address: Tuple[str, int]) -> socket.socket:
-    sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM, laddr=address)
+    sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
