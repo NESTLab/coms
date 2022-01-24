@@ -1,8 +1,11 @@
 #! /usr/bin/env python3
 import sys
 import argparse
+import signal
 from typing import Dict
 import rospy
+from coms.sim import Sim
+
 
 # Handle command line arguments
 parser = argparse.ArgumentParser(
@@ -23,8 +26,10 @@ def get_run_args() -> Dict:
     args, unknown = parser.parse_known_args()
     if len(unknown) > 0:
         # Fetch arguments from launch file
-        NODE_IP = rospy.get_param("/ip", "")
-        NODE_ENVIRONMENT = rospy.get_param("/environment", "")
+        ip = rospy.search_param('ip')
+        env = rospy.search_param('environment')
+        NODE_IP = rospy.get_param(ip, "")
+        NODE_ENVIRONMENT = rospy.get_param(env, "")
     else:
         NODE_IP = args.ip
         NODE_ENVIRONMENT = args.env
@@ -71,7 +76,21 @@ def main() -> None:
         args["NODE_ENVIRONMENT"] = "sim"
         print_run_args(args)
 
+    # Run simulation environment
+    simulation = Sim(listen_address=args["NODE_IP"], broadcast_address=args["NODE_IP"])
+
+    def exit_handler(signal_received: signal.Signals, frame: any) -> None:
+        print("SIGNAL OBSERVED: ", str(signal_received))
+        simulation.stop()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, exit_handler)
+    signal.signal(signal.SIGTSTP, exit_handler)
+    signal.signal(signal.SIGCONT, exit_handler)
+
+    simulation.start()
+    rospy.spin()
+
 
 if __name__ == "__main__":
     main()
-    rospy.spin()
