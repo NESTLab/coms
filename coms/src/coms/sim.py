@@ -66,7 +66,7 @@ class Sim():
             except socket.timeout:
                 pass
             except socket.error:
-                continue
+                pass
             client_sock.close()
         sock.close()
 
@@ -95,7 +95,7 @@ class Sim():
                         neighbors.append(address)
                 except socket.error:
                     # Connection timed out
-                    continue
+                    pass
                 sock.close()
         return neighbors
 
@@ -185,7 +185,7 @@ def send(f: Tuple[str, int], t: Tuple[str, int], num_retries: int = 2) -> None:
             num_retries = 0
 
         except socket.error:
-            continue
+            pass
 
         sock.close()
 

@@ -75,8 +75,6 @@ class TestSim(unittest.TestCase):
         local_ips = ["192.168.0.1", "192.168.0.2", "192.168.0.3"]
         launch = launch_sim_network(DEFAULT_NET_SIM_LAUNCH_FILE, local_ips)
         check_output(["sudo", "ip", "rule", "list"])
-        for n in get_device_numbers():
-            remove_net_tunnel(n)
         terminate_sim_network(launch, local_ips)
 
     def test_start_and_stop(self: unittest.TestCase) -> None:
