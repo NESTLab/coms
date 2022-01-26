@@ -5,11 +5,12 @@ from typing import List
 import socket
 from subprocess import check_output
 from coms.sim import Sim, is_sim_network_running, launch_sim_network, terminate_sim_network, gen_bound_socket, get_device_numbers, remove_net_tunnel # noqa: E501
-from coms.constants import BROADCASTER_PORT, LISTENER_PORT
+from coms.utils import get_port_from
 from roslaunch import parent
 import threading
 import time
 from unittest.mock import Mock, MagicMock, patch
+from concurrent.futures import ThreadPoolExecutor
 
 
 def create_tunnels(device_names: List) -> None:
@@ -28,17 +29,18 @@ DEFAULT_NET_SIM_LAUNCH_FILE = "/root/catkin_ws/src/ros-net-sim/example/launch/ga
 class TestSim(unittest.TestCase):
 
     def test_init(self: unittest.TestCase) -> None:
-        s = Sim("1", "2", DEFAULT_NET_SIM_LAUNCH_FILE)
-        self.assertEqual(s.L_PORT, LISTENER_PORT)
-        self.assertEqual(s.L_ADDRESS, "1")
-        self.assertEqual(s.B_PORT, BROADCASTER_PORT)
-        self.assertEqual(s.B_ADDRESS, "2")
-        self.assertEqual(s.stay_alive, True)
+        ip = "0.0.0.0"
+        s = Sim(ip, DEFAULT_NET_SIM_LAUNCH_FILE)
+        self.assertEqual(s.LISTEN_ADDRESS, (ip, get_port_from(ip, True)))
+        self.assertEqual(s.BROADCAST_ADDRESS, (ip, get_port_from(ip, False)))
         self.assertEqual(s.LOCAL_IPS, ["192.168.0.1", "192.168.0.2", "192.168.0.3"])
         self.assertEqual(s.NET_SIM_LAUNCH_FILE, DEFAULT_NET_SIM_LAUNCH_FILE)
+        self.assertEqual(type(s.thread_executor), ThreadPoolExecutor)
+        self.assertEqual(s.NET_PROC, None)
 
     def test_is_sim_network_running(self: unittest.TestCase) -> None:
-        s: Sim = Sim("", "", DEFAULT_NET_SIM_LAUNCH_FILE)
+        ip = "0.0.0.0"
+        s: Sim = Sim(ip, DEFAULT_NET_SIM_LAUNCH_FILE)
         self.assertEqual(is_sim_network_running(s.LOCAL_IPS), False, "Detected network before invocation")
         launch = launch_sim_network(s.NET_SIM_LAUNCH_FILE, s.LOCAL_IPS)
         self.assertEqual(is_sim_network_running(s.LOCAL_IPS), True, "Can't detect running network")
@@ -46,7 +48,8 @@ class TestSim(unittest.TestCase):
         self.assertEqual(is_sim_network_running(s.LOCAL_IPS), False, "Network did not appear to shut down correctly")
 
     def test_launch_sim_network(self: unittest.TestCase) -> None:
-        s: Sim = Sim("", "", DEFAULT_NET_SIM_LAUNCH_FILE)
+        ip = "0.0.0.0"
+        s: Sim = Sim(ip, DEFAULT_NET_SIM_LAUNCH_FILE)
         launch = launch_sim_network(s.NET_SIM_LAUNCH_FILE, s.LOCAL_IPS)
         self.assertEqual(
             isinstance(launch, parent.ROSLaunchParent),
@@ -74,17 +77,20 @@ class TestSim(unittest.TestCase):
     def test_remove_net_tunnel(self: unittest.TestCase) -> None:
         local_ips = ["192.168.0.1", "192.168.0.2", "192.168.0.3"]
         launch = launch_sim_network(DEFAULT_NET_SIM_LAUNCH_FILE, local_ips)
-        check_output(["sudo", "ip", "rule", "list"])
+        out = str(check_output(["sudo", "ip", "rule", "list"]))
+        self.assertEqual(out.count('192.168.0'), 3)
         terminate_sim_network(launch, local_ips)
 
     def test_start_and_stop(self: unittest.TestCase) -> None:
-        s = Sim("192.168.0.1", "192.168.0.1", DEFAULT_NET_SIM_LAUNCH_FILE)
+        ip = "192.168.0.1"
+        s = Sim(ip, DEFAULT_NET_SIM_LAUNCH_FILE)
         s.start()
         for task in s.thread_tasks:
-            self.assertEqual(task.running(), True, "Not all tasks are running after invoking Sim.start()")
+            self.assertEqual(task.running(), True)
         s.stop()
         for task in s.thread_tasks:
-            self.assertEqual(task.done(), True, "Not all tasks stopped after invoking Sim.stop()")
+            self.assertEqual(task.running(), False)
+            self.assertEqual(task.done(), True)
 
     # def test_start_listener(self: unittest.TestCase) -> None:
     #     # ====== Listener never accepts client messages ======
@@ -111,8 +117,8 @@ class TestSim(unittest.TestCase):
     #     self.assertEqual(fake_client_sock.call_count, 0, "Client socket should not have been called")
     #     terminate_sim_network(launch, local_ips)
 
-        # ====== Listener accepts one client message ======
-        # TODO:
+    # ====== Listener accepts one client message ======
+    # TODO:
 
 
 if __name__ == '__main__':

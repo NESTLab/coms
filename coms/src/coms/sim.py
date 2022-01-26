@@ -5,8 +5,8 @@ import socket
 import threading
 from subprocess import check_output, call
 from typing import List, Tuple
-from coms.constants import BROADCASTER_PORT, LISTENER_PORT, MAX_CLIENTS, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, NET_CONFIG, DISCOVERABLE_TIMEOUT # noqa: E501
-from coms.utils import writable, readable, get_ip_list
+from coms.constants import MAX_CLIENTS, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, NET_CONFIG, DISCOVERABLE_TIMEOUT # noqa: E501
+from coms.utils import writable, readable, get_ip_list, get_port_from
 import roslaunch
 from concurrent.futures import ThreadPoolExecutor, Future
 import rospy
@@ -14,34 +14,30 @@ import rospy
 
 class Sim():
     LOCAL_IPS: List[str] = []
-    L_PORT: int = LISTENER_PORT
-    L_ADDRESS: str = ""
-    B_PORT: int = BROADCASTER_PORT
-    B_ADDRESS: str = ""
-    stay_alive: bool = True
+    LISTEN_ADDRESS: Tuple[str, int] = ()
+    BROADCAST_ADDRESS: Tuple[str, int] = ()
     thread_executor: ThreadPoolExecutor = None
     thread_tasks: List[Future] = []
     kill_thread_event: threading.Event = threading.Event()
     NET_PROC: roslaunch.parent.ROSLaunchParent = None
     NET_SIM_LAUNCH_FILE: str = ""
 
-    def __init__(self: Sim, listen_address: str, broadcast_address: str, net_sim_launch_file: str) -> None:
+    def __init__(self: Sim, address: str, net_sim_launch_file: str) -> None:
         path_to_config = check_output("find {0} -type f -name '{1}'".format(CATKIN_WS, NET_CONFIG), shell=True)
         self.LOCAL_IPS = get_ip_list(path_to_config.decode(ENCODING).strip())
-        self.L_ADDRESS = listen_address
-        self.B_ADDRESS = broadcast_address
         self.NET_SIM_LAUNCH_FILE = net_sim_launch_file
+        self.LISTEN_ADDRESS = (address, get_port_from(ip=address, listener=True))
+        self.BROADCAST_ADDRESS = (address, get_port_from(ip=address, listener=False))
         self.thread_executor = ThreadPoolExecutor(max_workers=2)
 
     def start(self: Sim) -> None:
         if self.NET_PROC is None:
             self.NET_PROC = launch_sim_network(self.NET_SIM_LAUNCH_FILE, self.LOCAL_IPS)
-        self.thread_tasks = [
-            self.thread_executor.submit(self._broadcaster),
-            self.thread_executor.submit(self._listener)
-        ]
-        for task in self.thread_tasks:
-            while not task.running():
+        self.thread_tasks = []
+        self.thread_tasks.append(self.thread_executor.submit(self._listener))
+        self.thread_tasks.append(self.thread_executor.submit(self._broadcaster))
+        for t in self.thread_tasks:
+            while not t.running():
                 time.sleep(0.01)
 
     def stop(self: Sim) -> None:
@@ -51,8 +47,7 @@ class Sim():
         self.thread_executor.shutdown(wait=True)
 
     def _listener(self: Sim) -> None:
-        address: Tuple[str, int] = (self.L_ADDRESS, self.L_PORT)
-        sock = gen_bound_socket(address)
+        sock = gen_bound_socket(self.LISTEN_ADDRESS)
         sock.settimeout(DISCOVERABLE_TIMEOUT)
         sock.listen(MAX_CLIENTS)
 
@@ -71,22 +66,19 @@ class Sim():
         sock.close()
 
     def _broadcaster(self: Sim) -> None:
-        address: Tuple[str, int] = (self.B_ADDRESS, self.B_PORT)
         while not self.kill_thread_event.is_set():
-            neighbors = self.get_reachable_ips(address)
+            neighbors = self.get_reachable_ips(self.BROADCAST_ADDRESS)
             for neighbor in neighbors:
-                send(address, neighbor)
+                send(self.BROADCAST_ADDRESS, neighbor)
             time.sleep(BROADCAST_INTERVAL)
 
     def get_reachable_ips(self: Sim, self_address: Tuple[str, int]) -> List[Tuple[str, int]]:
         neighbors = []
         for ip in self.LOCAL_IPS:
             if ip != self_address[0]:
-                address = (ip, self.L_PORT)
+                address = (ip, get_port_from(ip=ip, listener=True))
                 # Create non-blocking socket, bound to the local address for broadcasting
                 sock = gen_bound_socket(self_address)
-                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                sock.setblocking(False)
                 sock.settimeout(DISCOVERABLE_TIMEOUT)
                 try:
                     # Attempt to connect to remote listener
@@ -159,7 +151,6 @@ def remove_net_rules() -> None:
 
 def gen_bound_socket(address: Tuple[str, int]) -> socket.socket:
     sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
     sock.setblocking(True)
