@@ -1,4 +1,4 @@
-from ast import arg
+from re import M
 import unittest
 from subprocess import call
 from typing import List
@@ -8,6 +8,8 @@ from coms.sim import Sim, is_sim_network_running, launch_sim_network, terminate_
 from coms.constants import BROADCASTER_PORT, LISTENER_PORT
 from roslaunch import parent
 import threading
+import time
+from unittest.mock import Mock, MagicMock, patch
 
 
 def create_tunnels(device_names: List) -> None:
@@ -63,20 +65,11 @@ class TestSim(unittest.TestCase):
         destroy_tunnels(["tun0", "tun1", "tun2", "tun3"])
         self.assertEqual(get_device_numbers(), [], "Detected unexpected tunnel device")
 
-    def test_start_and_stop(self: unittest.TestCase) -> None:
-        s = Sim("192.168.0.1", "192.168.0.1", DEFAULT_NET_SIM_LAUNCH_FILE)
-        s.start()
-        self.assertEqual(len(s.threads), 2)
-        for t in s.threads:
-            self.assertEqual(t.is_alive(), True)
-        s.stop()
-        for t in s.threads:
-            self.assertEqual(t.is_alive(), False)
-
     def test_gen_bound_socket(self: unittest.TestCase) -> None:
         sock: socket.socket = gen_bound_socket(('127.0.0.1', 8831))
         self.assertEqual(sock.family, socket.AF_INET)
         self.assertEqual(sock.type, socket.SOCK_STREAM)
+        sock.close()
 
     def test_remove_net_tunnel(self: unittest.TestCase) -> None:
         local_ips = ["192.168.0.1", "192.168.0.2", "192.168.0.3"]
@@ -86,16 +79,42 @@ class TestSim(unittest.TestCase):
             remove_net_tunnel(n)
         terminate_sim_network(launch, local_ips)
 
-    def test_start_listener(self: unittest.TestCase) -> None:
-        local_ips = ["192.168.0.1", "192.168.0.2", "192.168.0.3"]
+    def test_start_and_stop(self: unittest.TestCase) -> None:
         s = Sim("192.168.0.1", "192.168.0.1", DEFAULT_NET_SIM_LAUNCH_FILE)
-        launch = launch_sim_network(DEFAULT_NET_SIM_LAUNCH_FILE, local_ips)
-        s.start_listener
-        listener = threading.Thread(target=s.start_listener, args=(s,))
-        listener.start()
-        s.kill_thread_event.set()
-        listener.join()
-        terminate_sim_network(launch, local_ips)
+        s.start()
+        for task in s.thread_tasks:
+            self.assertEqual(task.running(), True, "Not all tasks are running after invoking Sim.start()")
+        s.stop()
+        for task in s.thread_tasks:
+            self.assertEqual(task.done(), True, "Not all tasks stopped after invoking Sim.stop()")
+
+    # def test_start_listener(self: unittest.TestCase) -> None:
+    #     # ====== Listener never accepts client messages ======
+    #     # Startup network
+    #     local_ips = ["192.168.0.1", "192.168.0.2", "192.168.0.3"]
+    #     s = Sim("192.168.0.1", "192.168.0.1", DEFAULT_NET_SIM_LAUNCH_FILE)
+    #     launch = launch_sim_network(DEFAULT_NET_SIM_LAUNCH_FILE, local_ips)
+    #     # Mock kill_thread_event
+    #     fake_event = MagicMock()
+    #     fake_event.is_set = Mock(return_value=True)
+    #     fake_client_sock = Mock()
+    #     fake_sock = MagicMock()
+    #     fake_sock.listen = Mock()
+    #     fake_sock.accept = (fake_client_sock, "some_addr")
+    #     with patch('coms.sim.gen_bound_socket', return_value=fake_sock) as mock_gen_bound_socket:
+    #         s.kill_thread_event = fake_event
+    #         listener: threading.Thread = threading.Thread(target=s.start_listener)
+    #         listener.start()
+    #         listener.join()
+
+    #     mock_gen_bound_socket.assert_called_once()
+    #     self.assertEqual(fake_event.is_set.call_count, 1, "Sim.kill_thread_event.is_set() was never called")
+    #     self.assertEqual(fake_sock.listen.call_count, 1, "Listener socket was never given call to listen()")
+    #     self.assertEqual(fake_client_sock.call_count, 0, "Client socket should not have been called")
+    #     terminate_sim_network(launch, local_ips)
+
+        # ====== Listener accepts one client message ======
+        # TODO:
 
 
 if __name__ == '__main__':

@@ -16,11 +16,15 @@ case $RUN_XTERM in
     ;;
 esac
 
+# Install coms package
+pip install -e /root/catkin_ws/src/coms
 # Obtain ROS environment variables
 source /opt/ros/noetic/setup.bash
 # Install ROS Packages
 rosdep install -i --from-path /root/catkin_ws/src --rosdistro $ROS_DISTRO -y
 # Enforce C++ language standard
 catkin config --cmake-args -DCMAKE_CXX_STANDARD=20 -DPYTHON_EXECUTABLE=/usr/bin/python3
+# Make the project
+cd /root/catkin_ws && catkin_make
 
 exec supervisord -c /app/supervisord.conf

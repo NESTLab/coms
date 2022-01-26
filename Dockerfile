@@ -65,7 +65,8 @@ RUN pip3 install pyquaternion; \
   rosdep init; \
   rosdep update; \
   mkdir -p /root/catkin_ws/src; \
-  echo "cd /root/catkin_ws;" >> ~/.bashrc;
+  echo "cd /root/catkin_ws;" >> ~/.bashrc; \
+  echo "source /root/catkin_ws/devel/setup.bash;" >> ~/.bashrc;
 
 COPY ./entrypoint.sh /app/entrypoint.sh
 
