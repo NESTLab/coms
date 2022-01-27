@@ -2,11 +2,13 @@ import socket
 from typing import Tuple
 from threading import current_thread, Event, Thread
 from socketserver import BaseRequestHandler, TCPServer, ThreadingMixIn, ThreadingTCPServer
-from coms.constants import ENCODING
+from coms.constants import ENCODING, RESPONSE_TIMEOUT
 
 
 class ThreadedTCPRequestHandler(BaseRequestHandler):
     def handle(self: BaseRequestHandler) -> None:
+        # print("handling request: ", self.request)
+        # self.request.close()
         data = str(self.request.recv(1024), ENCODING)
         cur_thread = current_thread()
         response = bytes("{}: {}".format(cur_thread.name, data), ENCODING)
@@ -15,15 +17,16 @@ class ThreadedTCPRequestHandler(BaseRequestHandler):
 
 class ThreadedTCPServer(ThreadingMixIn, TCPServer):
     def server_bind(self: ThreadingTCPServer) -> None:
+        self.socket.settimeout(RESPONSE_TIMEOUT)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind(self.server_address)
 
 
-def client(source: Tuple[str, int], destination: Tuple[str, int], message: str) -> None:
+def client(nic: str, destination: Tuple[str, int], message: str) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.setsockopt(socket.SOL_SOCKET, 25, str("tun1" + '\0').encode('utf-8'))
-        # sock.bind(source)
+        sock.setsockopt(socket.SOL_SOCKET, 25, str(nic + '\0').encode('utf-8'))
+        sock.settimeout(RESPONSE_TIMEOUT)
         sock.connect(destination)
         print(sock.getpeername())
         print(sock.getsockname())

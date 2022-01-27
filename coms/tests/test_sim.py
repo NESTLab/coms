@@ -1,10 +1,14 @@
 import unittest
+import time
 from typing import List
+from threading import Event, Thread
 from subprocess import call, check_output
 from concurrent.futures import ThreadPoolExecutor
 from coms.sim import Sim, is_sim_network_running, launch_sim_network, terminate_sim_network
 from coms.constants import STATIC_LISTENER_PORT
+from coms.server import server
 from roslaunch import parent
+from coms.utils import get_port_from
 
 
 DEFAULT_NET_SIM_LAUNCH_FILE = "/root/catkin_ws/src/ros-net-sim/example/launch/gazebo.launch"
@@ -26,12 +30,10 @@ class TestSim(unittest.TestCase):
 
     def test_init(self: unittest.TestCase) -> None:
         s = Sim(LOOPBACK_ADDRESS, DEFAULT_NET_SIM_LAUNCH_FILE)
-        self.assertEqual(s.LISTEN_ADDRESS, (LOOPBACK_ADDRESS, STATIC_LISTENER_PORT))
+        self.assertEqual(s.LISTEN_ADDRESS, (LOOPBACK_ADDRESS, get_port_from(LOOPBACK_ADDRESS, True)))
         self.assertEqual(s.LOCAL_IPS, LAUNCH_CONFIG_LOCAL_IPS)
         self.assertEqual(s.NET_SIM_LAUNCH_FILE, DEFAULT_NET_SIM_LAUNCH_FILE)
-        self.assertEqual(type(s.thread_executor), ThreadPoolExecutor)
         self.assertEqual(s.NET_PROC, None)
-        self.assertEqual(s.NIC, '')
 
     def test_is_sim_network_running(self: unittest.TestCase) -> None:
         s: Sim = Sim(LOOPBACK_ADDRESS, DEFAULT_NET_SIM_LAUNCH_FILE)
@@ -60,15 +62,51 @@ class TestSim(unittest.TestCase):
         self.assertEqual(out.count('192.168.0'), 3)
         terminate_sim_network(launch, LAUNCH_CONFIG_LOCAL_IPS)
 
+    def test_get_reachable_ips(self: unittest.TestCase) -> None:
+        s1 = Sim(LAUNCH_CONFIG_LOCAL_IPS[0], DEFAULT_NET_SIM_LAUNCH_FILE)
+        s2 = Sim(LAUNCH_CONFIG_LOCAL_IPS[1], DEFAULT_NET_SIM_LAUNCH_FILE)
+        test_sim = Sim(LAUNCH_CONFIG_LOCAL_IPS[2], DEFAULT_NET_SIM_LAUNCH_FILE)
+        launch = launch_sim_network(DEFAULT_NET_SIM_LAUNCH_FILE, LAUNCH_CONFIG_LOCAL_IPS)
+        executor = ThreadPoolExecutor(max_workers=2)
+        executor.submit(s1._listener)
+        reachable = test_sim.get_reachable_ips('tun1')
+        second_reachable = test_sim.get_reachable_ips('tun1')
+        executor.submit(s2._listener)
+        third_reachable = test_sim.get_reachable_ips('tun1')
+        s2.kill_thread_event.set()
+        s1.kill_thread_event.set()
+        executor.shutdown(wait=True)
+        terminate_sim_network(launch, LAUNCH_CONFIG_LOCAL_IPS)
+
+        self.assertEqual(
+            reachable,
+            [(LAUNCH_CONFIG_LOCAL_IPS[0], get_port_from(LAUNCH_CONFIG_LOCAL_IPS[0], True))])
+
+        self.assertEqual(
+            second_reachable,
+            [(LAUNCH_CONFIG_LOCAL_IPS[0], get_port_from(LAUNCH_CONFIG_LOCAL_IPS[0], True))])
+
+        self.assertEqual(
+            third_reachable,
+            [(LAUNCH_CONFIG_LOCAL_IPS[0], get_port_from(LAUNCH_CONFIG_LOCAL_IPS[0], True)),
+             (LAUNCH_CONFIG_LOCAL_IPS[1], get_port_from(LAUNCH_CONFIG_LOCAL_IPS[1], True))])
+
     def test_start_and_stop(self: unittest.TestCase) -> None:
-        s = Sim(LAUNCH_CONFIG_LOCAL_IPS[0], DEFAULT_NET_SIM_LAUNCH_FILE)
-        s.start()
-        for task in s.thread_tasks:
-            self.assertEqual(task.running(), True)
-        s.stop()
-        for task in s.thread_tasks:
-            self.assertEqual(task.running(), False)
-            self.assertEqual(task.done(), True)
+        s1 = Sim(LAUNCH_CONFIG_LOCAL_IPS[0], DEFAULT_NET_SIM_LAUNCH_FILE)
+        s2 = Sim(LAUNCH_CONFIG_LOCAL_IPS[1], DEFAULT_NET_SIM_LAUNCH_FILE)
+        s1.start()
+        for task in s1.thread_tasks:
+            self.assertEqual(task.is_alive(), True)
+        s2.start()
+        for task in s2.thread_tasks:
+            self.assertEqual(task.is_alive(), True)
+        time.sleep(3)
+        s2.stop()
+        for task in s2.thread_tasks:
+            self.assertEqual(task.is_alive(), False)
+        s1.stop()
+        for task in s1.thread_tasks:
+            self.assertEqual(task.is_alive(), False)
 
 
 if __name__ == '__main__':
