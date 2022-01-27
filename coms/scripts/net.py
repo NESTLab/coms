@@ -13,9 +13,6 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-ip',
                     type=str,
                     help='unique static IP for ROS node')
-parser.add_argument('-port',
-                    type=str,
-                    help='port for TCP socket')
 parser.add_argument('-env',
                     type=str,
                     choices=['pi', 'sim'],
@@ -31,18 +28,15 @@ def get_run_args() -> Dict:
         # Fetch arguments from launch file
         ip = rospy.search_param('ip')
         env = rospy.search_param('environment')
-        port = rospy.search_param('port')
         NODE_IP = rospy.get_param(ip, "")
-        NODE_PORT = rospy.get_param(port, "")
         NODE_ENVIRONMENT = rospy.get_param(env, "")
     else:
         NODE_IP = args.ip
-        NODE_PORT = args.port
         NODE_ENVIRONMENT = args.env
 
     # Validate all runtime arguments
-    if (NODE_NAMESPACE == "" or NODE_NAME == "" or NODE_ENVIRONMENT == "" or NODE_IP == "" or NODE_PORT == "" or
-            (NODE_ENVIRONMENT != "sim" and NODE_ENVIRONMENT != "pi")):
+    if (NODE_NAMESPACE == "" or NODE_NAME == "" or NODE_ENVIRONMENT == "" or NODE_IP == ""
+            or (NODE_ENVIRONMENT != "sim" and NODE_ENVIRONMENT != "pi")):
         print("Invalid command line or launch arguments.", file=sys.stderr)
         parser.print_usage()
         sys.exit(1)
@@ -50,7 +44,6 @@ def get_run_args() -> Dict:
         'NODE_NAMESPACE': NODE_NAMESPACE,
         'NODE_NAME': NODE_NAME,
         'NODE_IP': NODE_IP,
-        'NODE_PORT': NODE_PORT,
         'NODE_ENVIRONMENT': NODE_ENVIRONMENT
     }
 
@@ -61,9 +54,8 @@ ___________________________
 NODE_NAMESPACE: {0}
 NODE_NAME: {1}
 NODE_IP: {2}
-NODE_PORT: {3}
-NODE_ENVIRONMENT: {4}\n===========================\n""".format(
-        args["NODE_NAMESPACE"], args["NODE_NAME"], args["NODE_IP"], args["NODE_PORT"], args["NODE_ENVIRONMENT"]))
+NODE_ENVIRONMENT: {3}\n===========================\n""".format(
+        args["NODE_NAMESPACE"], args["NODE_NAME"], args["NODE_IP"], args["NODE_ENVIRONMENT"]))
 
 
 def main() -> None:
@@ -85,7 +77,9 @@ def main() -> None:
         print_run_args(args)
 
     # Run simulation environment
-    simulation = Sim(address=args["NODE_IP"], launch_sim_network='/root/catkin_ws/src/ros-net-sim/example/launch/gazebo.launch')
+    simulation = Sim(
+        address=args["NODE_IP"],
+        launch_sim_network='/root/catkin_ws/src/ros-net-sim/example/launch/gazebo.launch')
 
     def exit_handler(signal_received: signal.Signals, frame: any) -> None:
         print("SIGNAL OBSERVED: ", str(signal_received))

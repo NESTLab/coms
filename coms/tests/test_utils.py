@@ -1,8 +1,19 @@
 import unittest
 import socket
-from subprocess import check_output
-from coms.utils import readable, writable, get_ip_list, get_port_from
+from typing import List
+from subprocess import check_output, call
+from coms.utils import readable, writable, get_ip_list, get_interface_from_ip, get_device_numbers, gen_bound_socket
 from coms.constants import CATKIN_WS, ENCODING, NET_CONFIG
+
+
+def create_tunnels(device_names: List) -> None:
+    for name in device_names:
+        call(["sudo", "-S", "ip", "tuntap", "add", "dev", name, "mode", "tun"])
+
+
+def destroy_tunnels(device_names: List) -> None:
+    for name in device_names:
+        call(["sudo", "-S", "ip", "tuntap", "del", "dev", name, "mode", "tun"])
 
 
 class TestUtils(unittest.TestCase):
@@ -24,16 +35,28 @@ class TestUtils(unittest.TestCase):
         local_ips = get_ip_list(path_to_config.decode(ENCODING).strip())
         self.assertEqual(local_ips, ["192.168.0.1", "192.168.0.2", "192.168.0.3"])
 
-    def test_get_port_from(self: unittest.TestCase) -> None:
-        tests = [
-            ('192.168.0.1', False, 8111),
-            ('192.168.0.1', True, 8221),
-            ('192.168.0.19', False, 8119),
-            ('192.168.0.19', True, 8219),
-        ]
-        for test in tests:
-            got = get_port_from(ip=test[0], listener=test[1])
-            self.assertEqual(got, test[2])
+    def test_get_interface_from_ip(self: unittest.TestCase) -> None:
+        # Loopback device will always have the same IP address
+        self.assertEqual(
+            get_interface_from_ip('127.0.0.1'),
+            'lo',
+            "Unexpected network interface found for loopback device")
+
+    def test_get_device_numbers(self: unittest.TestCase) -> None:
+        # If they are, they should be manually removed
+        self.assertEqual(get_device_numbers(), [], "Detected unexpected tunnel device")
+        # Create four tunnel devices
+        create_tunnels(["tun0", "tun1", "tun2", "tun3"])
+        self.assertEqual(get_device_numbers(), [0, 1, 2, 3], "Additional tunnel devices not observed")
+        destroy_tunnels(["tun0", "tun1", "tun2", "tun3"])
+        self.assertEqual(get_device_numbers(), [], "Detected unexpected tunnel device")
+
+    def test_gen_bound_socket(self: unittest.TestCase) -> None:
+        sock = gen_bound_socket('127.0.0.1')
+        self.assertEqual(sock.family, socket.AF_INET, "Unexpected socket family")
+        self.assertEqual(sock.type, socket.SOCK_STREAM, "Unexpected socket type")
+        sock.close()
+        self.assertRaises(Exception, gen_bound_socket, '')
 
 
 if __name__ == '__main__':

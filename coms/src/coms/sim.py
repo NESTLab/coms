@@ -1,33 +1,30 @@
 from __future__ import annotations
-from concurrent.futures import thread
 import time
 import socket
 import threading
-from subprocess import check_output, call
 from typing import List, Tuple
-from coms.constants import MAX_CLIENTS, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, NET_CONFIG, DISCOVERABLE_TIMEOUT # noqa: E501
-from coms.utils import writable, readable, get_ip_list, get_port_from
-import roslaunch
+from subprocess import check_output, call
+from coms.constants import QUICK_WAIT_TIMER, STATIC_LISTENER_PORT, ENCODING, CATKIN_WS, NET_CONFIG, DISCOVERABLE_TIMEOUT
+from coms.utils import writable, get_ip_list, gen_bound_socket, get_device_numbers
 from concurrent.futures import ThreadPoolExecutor, Future
-import rospy
+import roslaunch
 
 
 class Sim():
-    LOCAL_IPS: List[str] = []
-    LISTEN_ADDRESS: Tuple[str, int] = ()
-    BROADCAST_ADDRESS: Tuple[str, int] = ()
-    thread_executor: ThreadPoolExecutor = None
-    thread_tasks: List[Future] = []
-    kill_thread_event: threading.Event = threading.Event()
-    NET_PROC: roslaunch.parent.ROSLaunchParent = None
-    NET_SIM_LAUNCH_FILE: str = ""
+    LOCAL_IPS: List[str] = []                               # List of ip addresses defined in configuration file
+    LISTEN_ADDRESS: Tuple[str, int] = ()                    # Address bound to the listener's TCP socket server
+    NIC: str = ""                                           # Network Interface Card - Retrieved from ip address
+    thread_executor: ThreadPoolExecutor = None              # Executor for managing threaded operations
+    thread_tasks: List[Future] = []                         # List of Future objects for obtaining of thread stats
+    kill_thread_event: threading.Event = threading.Event()  # Event for signaling when threaded tasks should terminate
+    NET_PROC: roslaunch.parent.ROSLaunchParent = None       # ROS specific launch object - for starting sim network
+    NET_SIM_LAUNCH_FILE: str = ""                           # Path to sim network launch file
 
     def __init__(self: Sim, address: str, net_sim_launch_file: str) -> None:
         path_to_config = check_output("find {0} -type f -name '{1}'".format(CATKIN_WS, NET_CONFIG), shell=True)
         self.LOCAL_IPS = get_ip_list(path_to_config.decode(ENCODING).strip())
         self.NET_SIM_LAUNCH_FILE = net_sim_launch_file
-        self.LISTEN_ADDRESS = (address, get_port_from(ip=address, listener=True))
-        self.BROADCAST_ADDRESS = (address, get_port_from(ip=address, listener=False))
+        self.LISTEN_ADDRESS = (address, STATIC_LISTENER_PORT)
         self.thread_executor = ThreadPoolExecutor(max_workers=2)
 
     def start(self: Sim) -> None:
@@ -36,50 +33,38 @@ class Sim():
         self.thread_tasks = []
         self.thread_tasks.append(self.thread_executor.submit(self._listener))
         self.thread_tasks.append(self.thread_executor.submit(self._broadcaster))
+        # Ensure all tasks are running
         for t in self.thread_tasks:
             while not t.running():
-                time.sleep(0.01)
+                time.sleep(QUICK_WAIT_TIMER)
 
     def stop(self: Sim) -> None:
         if self.NET_PROC is not None:
             terminate_sim_network(self.NET_PROC, self.LOCAL_IPS)
+        # Signal threads to terminate
         self.kill_thread_event.set()
+        # Wait for all thredads to stop
         self.thread_executor.shutdown(wait=True)
 
     def _listener(self: Sim) -> None:
-        sock = gen_bound_socket(self.LISTEN_ADDRESS)
-        sock.settimeout(DISCOVERABLE_TIMEOUT)
-        sock.listen(MAX_CLIENTS)
-
         while not self.kill_thread_event.is_set():
-            client_sock, client_addr = sock.accept()
-            try:
-                # Ensure client is reachable
-                if not readable(client_sock, timeout=RESPONSE_TIMEOUT):
-                    raise socket.error("Client socket not readable")
-                print("Incoming message from:", client_addr)
-            except socket.timeout:
-                pass
-            except socket.error:
-                pass
-            client_sock.close()
-        sock.close()
+            time.sleep(0.5)
 
     def _broadcaster(self: Sim) -> None:
         while not self.kill_thread_event.is_set():
-            neighbors = self.get_reachable_ips(self.BROADCAST_ADDRESS)
-            for neighbor in neighbors:
-                send(self.BROADCAST_ADDRESS, neighbor)
-            time.sleep(BROADCAST_INTERVAL)
+            time.sleep(0.5)
 
     def get_reachable_ips(self: Sim, self_address: Tuple[str, int]) -> List[Tuple[str, int]]:
         neighbors = []
         for ip in self.LOCAL_IPS:
             if ip != self_address[0]:
-                address = (ip, get_port_from(ip=ip, listener=True))
+                address = (ip, STATIC_LISTENER_PORT)
                 # Create non-blocking socket, bound to the local address for broadcasting
                 sock = gen_bound_socket(self_address)
+
+                # sock.setblocking(False)
                 sock.settimeout(DISCOVERABLE_TIMEOUT)
+
                 try:
                     # Attempt to connect to remote listener
                     sock.connect(address)
@@ -114,7 +99,7 @@ def launch_sim_network(launch_file: str, local_ips: List[str]) -> roslaunch.pare
         force_screen=False)
     launch.start()
     while not is_sim_network_running(local_ips):
-        time.sleep(0.05)
+        time.sleep(QUICK_WAIT_TIMER)
     return launch
 
 
@@ -124,17 +109,7 @@ def terminate_sim_network(launch: roslaunch.parent.ROSLaunchParent, local_ips: L
         remove_net_tunnel(i)
     remove_net_rules()
     while is_sim_network_running(local_ips):
-        time.sleep(0.05)
-
-
-def get_device_numbers() -> List[int]:
-    devices: List[int] = []
-    out = check_output(["sudo", "-S", "ip", "tuntap", "list", "dev", "mode", "tun"])
-    for line in out.splitlines():
-        parts = line.decode(ENCODING).split(':')
-        dev_number = int(parts[0][3], 10)
-        devices.append(dev_number)
-    return devices
+        time.sleep(QUICK_WAIT_TIMER)
 
 
 def remove_net_tunnel(i: int) -> None:
@@ -147,38 +122,6 @@ def remove_net_tunnel(i: int) -> None:
 def remove_net_rules() -> None:
     call(["sudo", "ip", "rule", "add", "pref", "0", "from", "all", "lookup", "local"])
     call(["sudo", "ip", "rule", "del", "pref", "10", "from", "all", "lookup", "local"])
-
-
-def gen_bound_socket(address: Tuple[str, int]) -> socket.socket:
-    sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
-    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_QUICKACK, 1)
-    sock.setblocking(True)
-    sock.bind(address)
-    return sock
-
-
-def send(f: Tuple[str, int], t: Tuple[str, int], num_retries: int = 2) -> None:
-    while num_retries > 0:
-        num_retries -= 1
-
-        sock = gen_bound_socket(f)
-        sock.setblocking(False)
-        sock.settimeout(RESPONSE_TIMEOUT)
-        sock.bind(f)
-        try:
-            # Send map to listener
-            sock.connect(t)
-            if not readable(sock):
-                raise socket.error("Listener socket not readable")
-
-            sock.sendall(b'Hello world')
-            num_retries = 0
-
-        except socket.error:
-            pass
-
-        sock.close()
 
 
 # # Create SIMPLEST form of:
