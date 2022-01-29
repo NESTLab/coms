@@ -4,8 +4,11 @@ from typing import List
 from subprocess import call, check_output
 from concurrent.futures import ThreadPoolExecutor
 from coms.sim import Sim, is_sim_network_running, launch_sim_network, terminate_sim_network
+from coms.constants import QUICK_WAIT_TIMER, STATIC_LISTENER_PORT
 from roslaunch import parent
 from coms.utils import get_port_from
+from coms.server import server
+from mock import MagicMock, Mock, patch
 
 
 DEFAULT_NET_SIM_LAUNCH_FILE = "/root/catkin_ws/src/ros-net-sim/example/launch/gazebo.launch"
@@ -110,6 +113,62 @@ class TestSim(unittest.TestCase):
         s1.stop()
         for task in s1.thread_tasks:
             self.assertEqual(task.running(), False)
+
+    def test_listener(self: unittest.TestCase) -> None:
+        with patch("coms.sim.server") as m_server:
+            s1 = Sim(LOOPBACK_ADDRESS, DEFAULT_NET_SIM_LAUNCH_FILE)
+            s1._listener()
+            self.assertEqual(m_server.call_count, 1)
+
+    def test_broadcaster(self: unittest.TestCase) -> None:
+        # No IP address for use
+        s1 = Sim('', DEFAULT_NET_SIM_LAUNCH_FILE)
+        self.assertRaises(Exception, s1._broadcaster)
+        # No NIC for IP address
+        s1 = Sim('68.0.206.67', DEFAULT_NET_SIM_LAUNCH_FILE)
+        self.assertRaises(Exception, s1._broadcaster)
+        # Clear execution with unaquired lock
+        s1 = Sim(LOOPBACK_ADDRESS, DEFAULT_NET_SIM_LAUNCH_FILE)
+        s1._broadcaster()
+        # !IMPORTANT: If our tests block, this will be the culpret
+
+        # Send messages to neighbors
+        with patch("coms.sim.send_messsage") as s:
+
+            s1 = Sim(LOOPBACK_ADDRESS, DEFAULT_NET_SIM_LAUNCH_FILE)
+            self.num_iterations = 1
+            s1.keep_runing = MagicMock()
+
+            def locked() -> bool:
+                self.num_iterations -= 1
+                return self.num_iterations >= 0
+
+            s1.keep_runing.locked = locked
+            reachable = [
+                (LAUNCH_CONFIG_LOCAL_IPS[0], STATIC_LISTENER_PORT),
+                (LAUNCH_CONFIG_LOCAL_IPS[1], STATIC_LISTENER_PORT),
+                (LAUNCH_CONFIG_LOCAL_IPS[2], STATIC_LISTENER_PORT),
+                (LAUNCH_CONFIG_LOCAL_IPS[2], STATIC_LISTENER_PORT)]
+            s1.get_reachable_ips = Mock(return_value=reachable)
+            s1._broadcaster()
+            self.assertEqual(s.call_count, len(reachable))
+
+        # Send one message to one neighbor 4 times
+        with patch("coms.sim.send_messsage") as s:
+
+            s1 = Sim(LOOPBACK_ADDRESS, DEFAULT_NET_SIM_LAUNCH_FILE)
+            self.num_iterations = 4
+            s1.keep_runing = MagicMock()
+
+            def locked() -> bool:
+                self.num_iterations -= 1
+                return self.num_iterations >= 0
+
+            s1.keep_runing.locked = locked
+            reachable = [(LAUNCH_CONFIG_LOCAL_IPS[0], STATIC_LISTENER_PORT)]
+            s1.get_reachable_ips = Mock(return_value=reachable)
+            s1._broadcaster()
+            self.assertEqual(s.call_count, 4)
 
 
 if __name__ == '__main__':

@@ -27,16 +27,20 @@ def send_messsage(nic: str, destination: Tuple[str, int], message: str) -> None:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.setsockopt(socket.SOL_SOCKET, 25, str(nic + '\0').encode('utf-8'))
         sock.settimeout(RESPONSE_TIMEOUT)
-        sock.connect(destination)
-        print(sock.getpeername())
-        print(sock.getsockname())
-        sock.sendall(bytes(message, ENCODING))
-        response = str(sock.recv(1024), ENCODING)
-        print("Received: {}".format(response))
+        try:
+            sock.connect(destination)
+            print(sock.getpeername())
+            print(sock.getsockname())
+            sock.sendall(bytes(message, ENCODING))
+            response = str(sock.recv(1024), ENCODING)
+            print("Received: {}".format(response))
+        except Exception as e:
+            print(e)
         sock.close()
 
 
 def server(address: Tuple[str, int], keep_runing: Lock) -> None:
+    print("MISSION FAILED")
     server = ThreadedTCPServer(address, ThreadedTCPRequestHandler)
     with server:
         # Start a thread with the server -- that thread will then start one
