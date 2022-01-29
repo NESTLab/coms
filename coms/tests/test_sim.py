@@ -1,12 +1,9 @@
 import unittest
 import time
 from typing import List
-from threading import Event, Thread
 from subprocess import call, check_output
 from concurrent.futures import ThreadPoolExecutor
 from coms.sim import Sim, is_sim_network_running, launch_sim_network, terminate_sim_network
-from coms.constants import STATIC_LISTENER_PORT
-from coms.server import server
 from roslaunch import parent
 from coms.utils import get_port_from
 
@@ -34,6 +31,7 @@ class TestSim(unittest.TestCase):
         self.assertEqual(s.LOCAL_IPS, LAUNCH_CONFIG_LOCAL_IPS)
         self.assertEqual(s.NET_SIM_LAUNCH_FILE, DEFAULT_NET_SIM_LAUNCH_FILE)
         self.assertEqual(s.NET_PROC, None)
+        self.assertEqual(s.keep_runing.locked(), False)
 
     def test_is_sim_network_running(self: unittest.TestCase) -> None:
         s: Sim = Sim(LOOPBACK_ADDRESS, DEFAULT_NET_SIM_LAUNCH_FILE)
@@ -65,16 +63,21 @@ class TestSim(unittest.TestCase):
     def test_get_reachable_ips(self: unittest.TestCase) -> None:
         s1 = Sim(LAUNCH_CONFIG_LOCAL_IPS[0], DEFAULT_NET_SIM_LAUNCH_FILE)
         s2 = Sim(LAUNCH_CONFIG_LOCAL_IPS[1], DEFAULT_NET_SIM_LAUNCH_FILE)
+        s1.keep_runing.acquire()
+        s2.keep_runing.acquire()
+
         test_sim = Sim(LAUNCH_CONFIG_LOCAL_IPS[2], DEFAULT_NET_SIM_LAUNCH_FILE)
         launch = launch_sim_network(DEFAULT_NET_SIM_LAUNCH_FILE, LAUNCH_CONFIG_LOCAL_IPS)
         executor = ThreadPoolExecutor(max_workers=2)
+
         executor.submit(s1._listener)
         reachable = test_sim.get_reachable_ips('tun1')
         second_reachable = test_sim.get_reachable_ips('tun1')
         executor.submit(s2._listener)
         third_reachable = test_sim.get_reachable_ips('tun1')
-        s2.kill_thread_event.set()
-        s1.kill_thread_event.set()
+
+        s1.keep_runing.release()
+        s2.keep_runing.release()
         executor.shutdown(wait=True)
         terminate_sim_network(launch, LAUNCH_CONFIG_LOCAL_IPS)
 
@@ -96,17 +99,17 @@ class TestSim(unittest.TestCase):
         s2 = Sim(LAUNCH_CONFIG_LOCAL_IPS[1], DEFAULT_NET_SIM_LAUNCH_FILE)
         s1.start()
         for task in s1.thread_tasks:
-            self.assertEqual(task.is_alive(), True)
+            self.assertEqual(task.running(), True)
         s2.start()
         for task in s2.thread_tasks:
-            self.assertEqual(task.is_alive(), True)
+            self.assertEqual(task.running(), True)
         time.sleep(3)
         s2.stop()
         for task in s2.thread_tasks:
-            self.assertEqual(task.is_alive(), False)
+            self.assertEqual(task.running(), False)
         s1.stop()
         for task in s1.thread_tasks:
-            self.assertEqual(task.is_alive(), False)
+            self.assertEqual(task.running(), False)
 
 
 if __name__ == '__main__':

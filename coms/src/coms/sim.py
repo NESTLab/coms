@@ -1,12 +1,12 @@
 from __future__ import annotations
 import time
 import socket
-from threading import Event, Thread
+from threading import Lock
 from typing import List, Tuple
 from subprocess import check_output, call
-from coms.constants import QUICK_WAIT_TIMER, RESPONSE_TIMEOUT, STATIC_LISTENER_PORT, ENCODING, CATKIN_WS, NET_CONFIG, DISCOVERABLE_TIMEOUT
+from coms.constants import QUICK_WAIT_TIMER, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, NET_CONFIG
 from coms.utils import get_interface_from_ip, get_port_from, get_ip_list, get_device_numbers
-from coms.server import server, client
+from coms.server import send_messsage, server
 from concurrent.futures import ThreadPoolExecutor, Future
 import roslaunch
 
@@ -14,56 +14,63 @@ import roslaunch
 class Sim():
     LOCAL_IPS: List[str] = []                               # List of ip addresses defined in configuration file
     LISTEN_ADDRESS: Tuple[str, int] = ()                    # Address bound to the listener's TCP socket server
-    thread_executor: ThreadPoolExecutor = None              # Executor for managing threaded operations
-    thread_tasks: List[Thread] = []                         # List of Future objects for obtaining of thread stats
-    kill_thread_event: Event = Event()  # Event for signaling when threaded tasks should terminate
     NET_PROC: roslaunch.parent.ROSLaunchParent = None       # ROS specific launch object - for starting sim network
     NET_SIM_LAUNCH_FILE: str = ""                           # Path to sim network launch file
+    thread_executor: ThreadPoolExecutor = None              # Executor for managing threaded operations
+    thread_tasks: List[Future] = []                         # List of Future objects for obtaining of thread stats
+    keep_runing: Lock = None                                # Mutex for threads to determin if they should keep running
 
     def __init__(self: Sim, address: str, net_sim_launch_file: str) -> None:
         path_to_config = check_output("find {0} -type f -name '{1}'".format(CATKIN_WS, NET_CONFIG), shell=True)
         self.LOCAL_IPS = get_ip_list(path_to_config.decode(ENCODING).strip())
         self.NET_SIM_LAUNCH_FILE = net_sim_launch_file
         self.LISTEN_ADDRESS = (address, get_port_from(address, True))
+        self.keep_runing = Lock()
 
     def start(self: Sim) -> None:
         if self.NET_PROC is None and not is_sim_network_running(self.LOCAL_IPS):
             self.NET_PROC = launch_sim_network(self.NET_SIM_LAUNCH_FILE, self.LOCAL_IPS)
+
+        self.executor: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
+        self.keep_runing.acquire()
         self.thread_tasks = [
-            Thread(target=self._listener),
-            # Thread(target=self._broadcaster)
+            self.executor.submit(self._listener),
+            self.executor.submit(self._broadcaster),
         ]
-        for t in self.thread_tasks:
-            t.start()
         # Ensure all tasks are running
         for t in self.thread_tasks:
-            while not t.is_alive():
+            while not t.running():
                 print("NOT RUNNING")
+                print("Done:", t.done())
+                if t.done():
+                    return
                 time.sleep(QUICK_WAIT_TIMER)
 
     def stop(self: Sim) -> None:
         if self.NET_PROC is not None:
             terminate_sim_network(self.NET_PROC, self.LOCAL_IPS)
         # Signal threads to terminate
-        self.kill_thread_event.set()
+        self.keep_runing.release()
         # Wait for all thredads to stop
-        for t in self.thread_tasks:
-            t.join()
+        self.executor.shutdown(wait=True)
 
     def _listener(self: Sim) -> None:
         # Blocks untill kill_thread_event is set
         print("Starting listener at :", self.LISTEN_ADDRESS)
-        server(self.LISTEN_ADDRESS, self.kill_thread_event)
+        server(self.LISTEN_ADDRESS, self.keep_runing)
+        print("Finished listening at :", self.LISTEN_ADDRESS)
 
     # TODO: Fix broadcaster
     def _broadcaster(self: Sim) -> None:
-        print("starting broadcaster")
-        self.kill_thread_event.wait()
-        # while not self.kill_thread_event.is_set():
-        #     # nic = get_interface_from_ip(self.LISTEN_ADDRESS[0])
-        #     # for neighbor in self.get_reachable_ips(nic):
-        #     #     client(nic, neighbor, "Hello world")
-        #     time.sleep(0.5)
+        print("Starting broadcaster for :", self.LISTEN_ADDRESS[0])
+        nic = get_interface_from_ip(self.LISTEN_ADDRESS[0])
+        if nic == '':
+            raise Exception("Broadcaster" + self.LISTEN_ADDRESS[0] + "could not retrieve a valid network interface!")
+        while self.keep_runing.locked():
+            for neighbor in self.get_reachable_ips(nic):
+                send_messsage(nic=nic, destination=neighbor, message="hello world :D")
+            time.sleep(BROADCAST_INTERVAL)
+        print("Finished broadcasting for :", self.LISTEN_ADDRESS[0])
 
     def get_reachable_ips(self: Sim, nic: str) -> List[Tuple[str, int]]:
         neighbors = []

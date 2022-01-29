@@ -3,7 +3,7 @@ import select
 import yaml
 import netifaces
 from typing import List, Dict
-from coms.constants import RESPONSE_TIMEOUT, ENCODING, BROADCASTER_PORT_PREFIX, LISTENER_PORT_PREFIX
+from coms.constants import RESPONSE_TIMEOUT, ENCODING, STATIC_LISTENER_PORT, BROADCASTER_PORT_PREFIX, LISTENER_PORT_PREFIX
 from subprocess import check_output
 
 
@@ -74,15 +74,18 @@ def gen_bound_socket(ip: str) -> socket.socket:
     return sock
 
 
+# IMPORTANT: This function is used as a function to manage ports for listener and broadcaster.
+# Therefore, if we want to change the ports in any which way, we can change it once, right here!
 def get_port_from(ip: str, listener: bool) -> int:
-    prefix: int = BROADCASTER_PORT_PREFIX
-    if listener:
-        prefix = LISTENER_PORT_PREFIX
-    parts = ip.split('.')
-    postfix = parts[len(parts) - 1]
-    n = int(postfix, 10)
-    if n < 10:
-        p = int(prefix / 10) * 10
-        return p + n
-    p = int(prefix / 100) * 100
-    return p + n
+    # prefix: int = BROADCASTER_PORT_PREFIX
+    # if listener:
+    #     prefix = LISTENER_PORT_PREFIX
+    # parts = ip.split('.')
+    # postfix = parts[len(parts) - 1]
+    # n = int(postfix, 10)
+    # if n < 10:
+    #     p = int(prefix / 10) * 10
+    #     return p + n
+    # p = int(prefix / 100) * 100
+    # return p + n
+    return STATIC_LISTENER_PORT

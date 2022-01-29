@@ -1,6 +1,6 @@
 import socket
 from typing import Tuple
-from threading import current_thread, Event, Thread
+from threading import current_thread, Lock, Thread
 from socketserver import BaseRequestHandler, TCPServer, ThreadingMixIn, ThreadingTCPServer
 from coms.constants import ENCODING, RESPONSE_TIMEOUT
 
@@ -22,7 +22,7 @@ class ThreadedTCPServer(ThreadingMixIn, TCPServer):
         self.socket.bind(self.server_address)
 
 
-def client(nic: str, destination: Tuple[str, int], message: str) -> None:
+def send_messsage(nic: str, destination: Tuple[str, int], message: str) -> None:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.setsockopt(socket.SOL_SOCKET, 25, str(nic + '\0').encode('utf-8'))
@@ -36,7 +36,7 @@ def client(nic: str, destination: Tuple[str, int], message: str) -> None:
         sock.close()
 
 
-def server(address: Tuple[str, int], termination_event: Event) -> None:
+def server(address: Tuple[str, int], keep_runing: Lock) -> None:
     server = ThreadedTCPServer(address, ThreadedTCPRequestHandler)
     with server:
         # Start a thread with the server -- that thread will then start one
@@ -47,7 +47,8 @@ def server(address: Tuple[str, int], termination_event: Event) -> None:
         server_thread.start()
         print("Server loop running in thread:", server_thread.name)
 
-        termination_event.wait()
+        keep_runing.acquire()
+        keep_runing.release()
 
         server.shutdown()
         server.socket.close()
