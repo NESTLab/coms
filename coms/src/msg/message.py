@@ -11,11 +11,15 @@ class Message(ABC):
         pass
 
     @abstractmethod
-    def produce_payload() -> bytes:
+    def produce_payload(self: Message) -> bytes:
         pass
 
     @abstractmethod
-    def consume_payload(payload: bytes) -> Message:
+    def consume_payload(self: Message, payload: bytes) -> Message:
+        pass
+
+    @abstractmethod
+    def handle(self: Message) -> any:
         pass
 
     @abstractmethod
