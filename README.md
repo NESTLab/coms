@@ -29,12 +29,14 @@ Coms also deploys a physics simulator that analyses the environment of the robot
 It's recommended to attach a Coms node to every Robot that wishes to communicate with the network. In ROS, this means adding it to your launch file.
 ```launch
 <launch>
- <arg name="my_robot"/>
 
- <node name="network_coms" pkg="coms">
- <arg name="environment" value="[ pi | sim ]"/>
- <arg name="ip" value="192.168.0.5"/>
- </node>
+    <arg name="my_robot"/>
+
+    <node name="network_coms" pkg="coms">
+        <arg name="environment" value="[ pi | sim ]"/>
+        <arg name="ip" value="192.168.0.5"/>
+    </node>
+
 <launch>
 ```
 Alternatively, you can manually run Coms as a script which
