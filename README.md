@@ -1,3 +1,6 @@
+[![Build Status](https://app.travis-ci.com/tylerferrara/coms.svg?branch=main)](https://app.travis-ci.com/tylerferrara/coms)
+
+
 # Coms 📡
 Distributed Communication Protocol for Robots running [ROS1](https://www.ros.org).
 
