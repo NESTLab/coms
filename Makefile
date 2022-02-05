@@ -11,6 +11,7 @@ test-ping:
 	python3 -m unittest $(WORKDIR)/coms/tests/test_ping.py
 
 coverage:
+	$(SETUP); \
 	coverage run --source=coms -m unittest discover $(WORKDIR)/coms/tests/; \
 	coveralls
 
