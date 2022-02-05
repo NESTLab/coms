@@ -3,10 +3,12 @@ language: python
 services:
   - docker
 
+env:
+  - COVERALLS_REPO_TOKEN=Vqz48pxOpQ8k0D7yp4tQs3LUVTaSEqIcj
+
 before_install:
   - docker-compose up -d
   - docker exec -it $(docker ps --format "{{.ID}}") make -f /root/catkin_ws/src/Makefile check-health
 
 script:
-  - docker exec -it $(docker ps --format "{{.ID}}") make -f /root/catkin_ws/src/Makefile test
-
+  - docker exec -it $(docker ps --format "{{.ID}}") make -f /root/catkin_ws/src/Makefile test coverage

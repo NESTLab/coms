@@ -60,3 +60,6 @@ CATKIN_IGNORE
 
 # macOS cache
 .DS_Store
+
+# Coveralls
+.coverage

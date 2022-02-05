@@ -10,6 +10,10 @@ test-ping:
 	$(SETUP); \
 	python3 -m unittest $(WORKDIR)/coms/tests/test_ping.py
 
+coverage:
+	coverage run --source=coms -m unittest discover $(WORKDIR)/coms/tests/; \
+	coveralls
+
 check-health:
 	source $(WORKDIR)/health-check.sh
 

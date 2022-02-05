@@ -1,5 +1,5 @@
 [![Build Status](https://app.travis-ci.com/tylerferrara/coms.svg?branch=main)](https://app.travis-ci.com/tylerferrara/coms)
-
+[![Coverage Status](https://coveralls.io/repos/github/tylerferrara/coms/badge.svg?branch=main)](https://coveralls.io/github/tylerferrara/coms?branch=main)
 
 # Coms 📡
 Distributed Communication Protocol for Robots running [ROS1](https://www.ros.org).
