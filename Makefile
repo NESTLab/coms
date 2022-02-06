@@ -1,6 +1,7 @@
 SHELL=bash
 WORKDIR=/root/catkin_ws/src
 SETUP=source /opt/ros/noetic/setup.bash;source /root/catkin_ws/devel/setup.bash
+COVERALLS_REPO_TOKEN=Vqz48pxOpQ8k0D7yp4tQs3LUVTaSEqIcj
 
 test:
 	$(SETUP); \
@@ -12,6 +13,8 @@ test-ping:
 
 coverage:
 	$(SETUP); \
+	export COVERALLS_REPO_TOKEN=$(COVERALLS_REPO_TOKEN); \
+	cd $(WORKDIR); \
 	coverage run --source=coms -m unittest discover $(WORKDIR)/coms/tests/; \
 	coveralls
 
