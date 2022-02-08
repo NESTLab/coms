@@ -10,6 +10,7 @@ project(coms)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
+  nav_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -106,6 +107,7 @@ catkin_package(
 #  LIBRARIES my_robot_common
   CATKIN_DEPENDS rospy
   std_msgs
+  nav_msgs
 #  DEPENDS system_lib
 )
 
