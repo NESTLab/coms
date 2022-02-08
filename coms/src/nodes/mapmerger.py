@@ -2,7 +2,9 @@
 import rospy
 import numpy as np
 from nav_msgs.msg import OccupancyGrid
-from multiprocessing import Process, Array
+from std_msgs.msg import Header
+import ctypes
+from multiprocessing import Process, Array, Lock
 from nav_msgs.srv import GetMap, GetMapResponse
 
 
@@ -22,9 +24,20 @@ class MapMerger:
         # GET PARAMS
         self.robot_name = rospy.get_param('~robot_name', 'tb0')
         self.map_service = rospy.get_param('~map_service', 'dynamic_map')
+        self.map_size = rospy.get_param('~map_size', 100)
 
         # DATA
-        self.latest_map = np.array([])
+        self.seq = 0
+        # map lock handles preventing multiple processes from editing map at once
+        self.map_lock = Lock()
+        # edit lock prevents processes from starting a merge before the other: gmapping vs dag merge
+        self.edit_lock = Lock()
+        # shared memory for numpy array map. can be edited (merged) by two different threads looking on two networks
+        self.shared_map = MapMerger.to_numpy(Array(ctypes.c_int8, self.map_size ** 2, lock=self.map_lock))
+
+        # PROCESSES
+        self.gmapping_merger = Process(target=self.get_latest_gmapping(), args=(self,))
+        self.netsim_merger = Process(target=self.get_latest_netsim(), args=(self,))
 
         # INIT ROS
         rospy.init_node(f"{self.robot_name}_MapMerger")
@@ -37,23 +50,49 @@ class MapMerger:
         """
         main running loop
         """
+        self.gmapping_merger.start()
+        self.netsim_merger.start()
         rospy.loginfo(f'{self.robot_name} map_merger node starting')
 
         while not rospy.is_shutdown():
-            mapdata = self.get_latest()
-            # add some merge jumbo here
-            self.publish_latest(mapdata)
+            self.publish_latest()
             self.rate.sleep()
 
         rospy.loginfo(f'{self.robot_name} map_merger node shutting down')
+        self.gmapping_merger.join()
+        self.netsim_merger.join()
 
-    def publish_latest(self, mapdata):
+    def publish_latest(self):
         """
         publishes the latest map
         """
-        self.map_publisher.publish(mapdata)
+        map_message = OccupancyGrid()
+        map_message.header = self.seq
+        self.map_lock.acquire()
+        map_message.data = self.shared_map
+        self.map_lock.release()
+        self.map_publisher.publish()
 
-    def get_latest(self):
+        self.seq += 1
+
+    def merge_into_shared(self, new_map):
+        """
+        merges a new map into the shared memory map
+        """
+
+        self.edit_lock.acquire()
+
+        # perform map merge
+        merged_map = new_map
+
+        # save new map in shared memory
+        self.map_lock.acquire()
+        self.shared_map = merged_map
+        self.map_lock.release()
+
+        self.edit_lock.release()
+
+    def get_latest_gmapping(self):
         """
         gets the latest map from map service
         """
@@ -62,9 +101,20 @@ class MapMerger:
             try:
                 map_service = rospy.ServiceProxy(self.map_service, GetMap)
                 response = map_service()
-                return response.map
+                latest_map = np.array(response.map.data)
+                #self.merge_into_shared(latest_map)
             except rospy.ServiceException as e:
                 rospy.loginfo("service call failed: %s" % e)
+
+    def get_latest_netsim(self):
+        """
+        gets the latest map from local robots
+        """
+        pass
+
+    @staticmethod
+    def to_numpy(array):
+        return np.frombuffer(array.get_obj())
 
 
 if __name__ == '__main__':
