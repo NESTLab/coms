@@ -3,8 +3,9 @@ import select
 import yaml
 import netifaces
 from typing import List, Dict
-from coms.constants import RESPONSE_TIMEOUT, ENCODING, STATIC_LISTENER_PORT, BROADCASTER_PORT_PREFIX, LISTENER_PORT_PREFIX
+from coms.constants import RESPONSE_TIMEOUT, ENCODING, STATIC_LISTENER_PORT, BROADCASTER_PORT_PREFIX, LISTENER_PORT_PREFIX # noqa: E501
 from subprocess import check_output
+from roslaunch.parent import ROSLaunchParent
 
 
 def readable(sock: socket.socket, timeout: float = RESPONSE_TIMEOUT) -> bool:
@@ -89,3 +90,13 @@ def get_port_from(ip: str, listener: bool) -> int:
     # p = int(prefix / 100) * 100
     # return p + n
     return STATIC_LISTENER_PORT
+
+
+def start_roscore() -> ROSLaunchParent:
+    parent = ROSLaunchParent("", [], is_core=True)     # run_id can be any string
+    parent.start()
+    return parent
+
+
+def stop_roscore(parent: ROSLaunchParent) -> None:
+    parent.shutdown()
