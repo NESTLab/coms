@@ -1,9 +1,11 @@
 import unittest
 import socket
+import rospy
 from typing import List
-from subprocess import check_output, call
-from coms.utils import readable, writable, get_ip_list, get_interface_from_ip, get_device_numbers, gen_bound_socket
+from subprocess import check_output, call, Popen
+from coms.utils import readable, writable, get_ip_list, get_interface_from_ip, get_device_numbers, gen_bound_socket, start_roscore, stop_roscore # noqa: E501
 from coms.constants import CATKIN_WS, ENCODING, NET_CONFIG
+from roslaunch.parent import ROSLaunchParent
 
 
 def create_tunnels(device_names: List) -> None:
@@ -57,6 +59,18 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(sock.type, socket.SOCK_STREAM, "Unexpected socket type")
         sock.close()
         self.assertRaises(Exception, gen_bound_socket, '')
+
+    def test_start_roscore(self: unittest.TestCase) -> None:
+        parent: ROSLaunchParent = start_roscore()
+        self.assertEqual(parent.is_core, True, "is_core option NOT set in ROSLaunchParent")
+        self.assertEqual(rospy.get_published_topics("/"), [], "roscore not running")
+        parent.shutdown()
+
+    def test_stop_roscore(self: unittest.TestCase) -> None:
+        parent: ROSLaunchParent = start_roscore()
+        self.assertEqual(rospy.get_published_topics("/"), [], "roscore not running")
+        stop_roscore(parent)
+        self.assertRaises(OSError, rospy.get_published_topics, "/")
 
 
 if __name__ == '__main__':

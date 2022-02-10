@@ -4,8 +4,9 @@ services:
   - docker
 
 before_install:
+  - docker-compose build
   - docker-compose up -d
-  - docker exec -it $(docker ps --format "{{.ID}}") make -f /root/catkin_ws/src/Makefile check-health
+  - docker exec -it "$(docker ps -aqf 'name=coms*')" make -f /root/catkin_ws/src/Makefile check-health
 
 script:
-  - docker exec -it $(docker ps --format "{{.ID}}") make -f /root/catkin_ws/src/Makefile test coverage
+  - docker exec -it "$(docker ps -aqf 'name=coms*')" make -f /root/catkin_ws/src/Makefile test coverage
