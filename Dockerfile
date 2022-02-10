@@ -60,7 +60,7 @@ RUN apt-get install -y cmake libfreeimage-dev libfreeimageplus-dev \
   make install;
 
 # Install extra dependencies
-RUN pip3 install pyquaternion; \
+RUN pip3 install pyquaternion scikit-image; \
   sudo apt-get install -y iproute2 ros-noetic-catkin python3-catkin-tools; \
   rosdep init; \
   rosdep update; \

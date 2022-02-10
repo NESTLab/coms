@@ -24,7 +24,7 @@ class TestAMCL:
         # write some test case methods
         assert msg is not None
         self.map = np.array(msg.data)
-        rospy.loginfo(f'{self.map.reshape(100, 100)}')
+        rospy.loginfo(f'{self.map}')
 
 
 if __name__ == "__main__":

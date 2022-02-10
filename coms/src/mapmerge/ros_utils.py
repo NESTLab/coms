@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-from constants import *
+from mapmerge.constants import *
 
 def pgm_to_numpy(filename):
     """
