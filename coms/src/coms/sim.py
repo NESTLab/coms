@@ -3,6 +3,7 @@ import time
 import socket
 import roslaunch
 import rospy
+from msg.ping import Ping
 from threading import Lock
 from typing import List, Tuple
 from subprocess import check_output, call
@@ -75,9 +76,16 @@ class Sim():
         nic = get_interface_from_ip(self.LISTEN_ADDRESS[0])
         if nic == '':
             raise Exception("Broadcaster" + self.LISTEN_ADDRESS[0] + "could not retrieve a valid network interface!")
+        local_addr = (self.LISTEN_ADDRESS[0], get_port_from(self.LISTEN_ADDRESS[0], False))
         while self.keep_runing.locked():
             for neighbor in self.get_reachable_ips(nic):
-                send_messsage(nic=nic, destination=neighbor, message="hello world :D")
+                send_messsage(
+                    nic=nic,
+                    destination=neighbor,
+                    message=Ping(
+                        source=local_addr,
+                        destination=neighbor
+                    ))
             time.sleep(BROADCAST_INTERVAL)
         print("Finished broadcasting for :", self.LISTEN_ADDRESS[0])
 
@@ -95,8 +103,8 @@ class Sim():
                         sock.connect(destination)
                         neighbors.append(sock.getpeername())
                         sock.close()
-                    except socket.error as e:
-                        print("Socket Error:", e)
+                    except Exception:
+                        print("Robot {0} not in line-of-site".format(destination))
                     sock.close()
 
         return neighbors
