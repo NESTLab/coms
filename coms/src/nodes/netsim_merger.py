@@ -57,7 +57,15 @@ class NetSimMerger(ROSMerger):
         """
         use network simulation to trade maps with another robot
         """
+        return self.netsim_coms()
+
+    def netsim_coms(self, robot, map) -> OccupancyGrid:
         pass
+
+    def run(self):
+        while 1:
+            if merge:
+                self.netsim_coms()
 
 
 if __name__ == '__main__':

@@ -34,8 +34,10 @@ def sift_mapmerge(map1, map2):
     return apply_warp(map2, M[:2])
 
 def orb_mapmerge(map1, map2):
-    map1, map2 = blur_map(map1), blur_map(map2)
+    # map1, map2 = blur_map(map1), blur_map(map2)
     orb = cv2.ORB_create(nfeatures=1000)
+    print(map1.shape)
+    print(map2.shape)
     kp1, desc1 = orb.detectAndCompute(map1, None)
     kp2, desc2 = orb.detectAndCompute(map2, None)
     index_params = dict(algorithm = 6, trees = 6, key_size=12, multi_probe_level = 1)

@@ -3,7 +3,7 @@ import rospy
 import numpy as np
 from nav_msgs.srv import GetMap, GetMapResponse
 from nav_msgs.msg import OccupancyGrid
-
+from mapmerge.ros_utils import pgm_to_numpy
 
 class TestGMAPPING:
     def __init__(self):
@@ -14,6 +14,8 @@ class TestGMAPPING:
         # DATA
         self.seq = 0
         self.map = np.eye(100, dtype=np.int16)
+        self.data_path = "/root/catkin_ws/src/coms/testData" # avert your eyes, static path!
+        self.map = pgm_to_numpy(self.data_path + "/full_map.pgm")
 
         # INIT ROS
         rospy.init_node(f'{self.robot_name}_test_GMAPPING')
@@ -32,6 +34,7 @@ class TestGMAPPING:
         occ.header.seq = self.seq
         occ.data = list(self.map.flatten())
         return GetMapResponse(occ)
+
 
 
 if __name__ == "__main__":

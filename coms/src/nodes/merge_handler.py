@@ -4,6 +4,7 @@ from coms.srv import MergeMap, MergeMapResponse, MergeMapRequest
 from nav_msgs.srv import GetMap, GetMapResponse, GetMapRequest
 from nav_msgs.msg import OccupancyGrid
 from mapmerge.keypoint_merge import orb_mapmerge
+from mapmerge.ros_utils import pgm_to_numpy, read_ros_numpy, write_ros_numpy
 import numpy as np
 
 
@@ -12,8 +13,17 @@ class MergeHandler:
         self.robot_name = rospy.get_param('~robot_name', 'tb0')
         self.map_size = rospy.get_param('~map_size', 100)
 
-        self.latest_map = np.array([])
+        #self.latest_map = np.array([])
         self.seq = 0
+        self.data_path = "/root/catkin_ws/src/coms/testData" # avert your eyes, static path!
+        self.latest_map = pgm_to_numpy(self.data_path + "/map_part0.pgm")
+        self.test_map = pgm_to_numpy(self.data_path + "/full_map.pgm")
+
+        self.latest_map = read_ros_numpy(write_ros_numpy(self.latest_map))
+        self.test_map = read_ros_numpy(write_ros_numpy(self.test_map))
+
+        print(orb_mapmerge(self.latest_map, self.test_map))
+        breakpoint()
 
         rospy.init_node(f"{self.robot_name}_MergeHandler")
         self.merge_service = rospy.Service(self.robot_name + "/merge", MergeMap, self.merge_new)
@@ -35,7 +45,7 @@ class MergeHandler:
         self.map_publisher.publish(occ)
 
     def merge_new(self, req: MergeMapRequest) -> MergeMapResponse:
-        new_map = req.map.data
+        new_map = np.array(req.map.data)
         try:
             merged = orb_mapmerge(new_map, self.latest_map)
             # TODO checks and maybe a lock? depends on the rospy callback threading
