@@ -3,20 +3,21 @@ import cv2
 
 from mapmerge.constants import *
 
-def numpy_2_ros(array):
+def numpy_to_ros(array):
     """
     returns a numpy array from a ros int8 array
     """
-    array[FREE] = 100
-    array[UNKNOWN] = -1
-    return array
+    array[array == FREE] = 100
+    array[array == UNKNOWN] = -1
+    return np.asarray(array, dtype=np.int8)
 
-def ros_2_numpy(array):
+def ros_to_numpy(array):
     """
     returns a int8 array from numpy
     """
-    array[100] = FREE
-    array[-1] = UNKNOWN
+    array[array == -1] = UNKNOWN
+    array = np.asarray(array, dtype=np.uint8)
+    array[array == 100] = FREE
     return array
 
 def pgm_to_numpy(filename):
