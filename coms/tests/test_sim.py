@@ -1,13 +1,14 @@
 import unittest
 import time
+import rospy
 from typing import List
+from std_msgs.msg import String
 from subprocess import call, check_output
 from concurrent.futures import ThreadPoolExecutor
 from coms.sim import Sim, is_sim_network_running, launch_sim_network, terminate_sim_network
-from coms.constants import QUICK_WAIT_TIMER, STATIC_LISTENER_PORT
+from coms.constants import STATIC_LISTENER_PORT, PUB_TOPIC, SUB_TOPIC
 from roslaunch import parent
-from coms.utils import get_port_from
-from coms.server import server
+from coms.utils import get_port_from, start_roscore, stop_roscore
 from mock import MagicMock, Mock, patch
 
 
@@ -169,6 +170,46 @@ class TestSim(unittest.TestCase):
             s1.get_reachable_ips = Mock(return_value=reachable)
             s1._broadcaster()
             self.assertEqual(s.call_count, 4)
+
+    def test_register_ros_topics(self: unittest.TestCase) -> None:
+        p = start_roscore()
+        rospy.init_node("some_node")
+
+        mocked_handler = Mock()
+        sim = Sim(LAUNCH_CONFIG_LOCAL_IPS[0], DEFAULT_NET_SIM_LAUNCH_FILE)
+        sim.listen_handler = mocked_handler
+        sim.register_ros_topics()
+        self.assertNotEqual(sim.sub, None)
+        self.assertNotEqual(sim.pub, None)
+        pub = rospy.Publisher(name=SUB_TOPIC, data_class=String, queue_size=10)
+        # NOTE: Publisher topics are created in a new thread. Allow this thread to start
+        time.sleep(1)
+        pub.publish(String('foo'))
+        pub.publish(String('bar'))
+        pub.publish(String('baz'))
+        topics = rospy.get_published_topics("/")
+        sim.unregister_ros_topics()
+        stop_roscore(p)
+        # Enusre topic was present
+
+        pub_topic = [PUB_TOPIC, 'std_msgs/String']
+        self.assertEqual(pub_topic in topics, True, "Sim not publishing ROS topic")
+        self.assertEqual(mocked_handler.call_count, 3)
+
+    def test_unregister_ros_topics(self: unittest.TestCase) -> None:
+        p = start_roscore()
+        rospy.init_node("some_node")
+        sim = Sim(LAUNCH_CONFIG_LOCAL_IPS[0], DEFAULT_NET_SIM_LAUNCH_FILE)
+        sim.sub = rospy.Subscriber('something', String, Mock())
+        sim.pub = rospy.Publisher('pub', String, queue_size=10)
+        sim.unregister_ros_topics()
+        stop_roscore(p)
+        self.assertEqual(sim.pub.resolved_name, None, "Publisher was not unregistered")
+        self.assertEqual(sim.sub.resolved_name, None, "Subscriber was not unregistered")
+
+    # TODO: @tylerferrara
+    def test_listen_handler(self: unittest.TestCase) -> None:
+        pass
 
 
 if __name__ == '__main__':

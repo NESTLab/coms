@@ -88,24 +88,3 @@ def server(address: Tuple[str, int], keep_runing: Lock) -> None:
 
         server.shutdown()
         server.socket.close()
-
-
-# if __name__ == "__main__":
-#     server_address = ("192.168.0.1", 8812)
-#     server_address2 = ("192.168.0.3", 8812)
-#     client_address = ("192.168.0.2", 8818)
-
-#     event = Event()
-#     srv = Thread(target=server, args=[server_address, event])
-#     srv2 = Thread(target=server, args=[server_address2, event])
-
-#     srv.start()
-#     srv2.start()
-
-#     client(client_address, server_address, "Hello World 1")
-#     client(client_address, server_address2, "Hello World 2")
-#     client(client_address, server_address, "Hello World 3")
-
-#     event.set()
-#     srv.join()
-#     srv2.join()
