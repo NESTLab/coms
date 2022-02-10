@@ -1,14 +1,16 @@
 from __future__ import annotations
 import time
 import socket
+import roslaunch
+import rospy
 from threading import Lock
 from typing import List, Tuple
 from subprocess import check_output, call
-from coms.constants import QUICK_WAIT_TIMER, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, NET_CONFIG
+from std_msgs.msg import String
+from coms.constants import QUICK_WAIT_TIMER, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, NET_CONFIG, SUB_TOPIC, PUB_TOPIC # noqa: E501
 from coms.utils import get_interface_from_ip, get_port_from, get_ip_list, get_device_numbers
 from coms.server import server, send_messsage
 from concurrent.futures import ThreadPoolExecutor, Future
-import roslaunch
 
 
 class Sim():
@@ -19,6 +21,8 @@ class Sim():
     thread_executor: ThreadPoolExecutor = None              # Executor for managing threaded operations
     thread_tasks: List[Future] = []                         # List of Future objects for obtaining of thread stats
     keep_runing: Lock = None                                # Mutex for threads to determin if they should keep running
+    pub: rospy.Publisher = None                             # ROS Publisher for sending msg responses to other nodes
+    sub: rospy.Subscriber = None                            # ROS Subscriber for listening to message requests
 
     def __init__(self: Sim, address: str, net_sim_launch_file: str) -> None:
         path_to_config = check_output("find {0} -type f -name '{1}'".format(CATKIN_WS, NET_CONFIG), shell=True)
@@ -28,9 +32,12 @@ class Sim():
         self.keep_runing = Lock()
 
     def start(self: Sim) -> None:
+        # Start simulated network
         if self.NET_PROC is None and not is_sim_network_running(self.LOCAL_IPS):
             self.NET_PROC = launch_sim_network(self.NET_SIM_LAUNCH_FILE, self.LOCAL_IPS)
-
+        # Setup Pub/Sub topics
+        self.register_ros_topics()
+        # Launch listener and broadcaster threads
         self.executor: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
         self.keep_runing.acquire()
         self.thread_tasks = [
@@ -53,6 +60,8 @@ class Sim():
         self.keep_runing.release()
         # Wait for all thredads to stop
         self.executor.shutdown(wait=True)
+        # Shutdown Pub/Sub channels
+        self.unregister_ros_topics()
 
     def _listener(self: Sim) -> None:
         # Blocks untill kill_thread_event is set
@@ -91,6 +100,31 @@ class Sim():
                     sock.close()
 
         return neighbors
+
+    def register_ros_topics(self: Sim) -> None:
+        self.pub = rospy.Publisher(
+            name=PUB_TOPIC,
+            data_class=String,
+            queue_size=10)
+
+        # NOTE: The Subscriber callback only accepts two params (according to the docs)
+        # rospy.Subscriber.callback: fn(msg, cb_args)
+        # This forces us to use a lambda function to ignore the 'self'
+        # source: http://docs.ros.org/en/melodic/api/rospy/html/rospy.topics.Subscriber-class.html
+        self.sub = rospy.Subscriber(
+            name=SUB_TOPIC,
+            data_class=String,
+            callback=lambda msg: self.listen_handler(msg, cb_args=None))
+
+    def unregister_ros_topics(self: Sim) -> None:
+        if self.pub is not None:
+            self.pub.unregister()
+        if self.sub is not None:
+            self.sub.unregister()
+
+    def listen_handler(self: Sim, msg: any, cb_args: any) -> None:
+        rospy.loginfo("GOT MESSAGE")
+        print('got -> ', msg.data)
 
 
 def is_sim_network_running(local_ips: List[str]) -> bool:
