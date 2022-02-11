@@ -17,6 +17,9 @@ parser.add_argument('-env',
                     type=str,
                     choices=['pi', 'sim'],
                     help='deployment environment [ pi | sim ]')
+parser.add_argument('-name',
+                    type=str,
+                    help='unique ROS node name')
 
 
 def get_run_args() -> Dict:
@@ -33,6 +36,7 @@ def get_run_args() -> Dict:
     else:
         NODE_IP = args.ip
         NODE_ENVIRONMENT = args.env
+        NODE_NAME = args.name
 
     # Validate all runtime arguments
     if (NODE_NAMESPACE == "" or NODE_NAME == "" or NODE_ENVIRONMENT == "" or NODE_IP == ""
@@ -59,11 +63,11 @@ NODE_ENVIRONMENT: {3}\n===========================\n""".format(
 
 
 def main() -> None:
-    # Initialize ROS node
-    rospy.init_node("coms")
     # Handle runtime arguments
     args: Dict = get_run_args()
     print_run_args(args)
+    # Initialize ROS node
+    rospy.init_node(args["NODE_NAME"])
     # Set fixed update-rate in Hz
     rospy.Rate(float(rospy.get_param('~rate', '2.0')))
     # TODO: Unblock PI environment (when supported)
@@ -79,10 +83,10 @@ def main() -> None:
     # Run simulation environment
     simulation = Sim(
         address=args["NODE_IP"],
-        launch_sim_network='/root/catkin_ws/src/ros-net-sim/example/launch/gazebo.launch')
+        net_sim_launch_file='/root/catkin_ws/src/ros-net-sim/example/launch/gazebo.launch')
 
     def exit_handler(signal_received: signal.Signals, frame: any) -> None:
-        print("SIGNAL OBSERVED: ", str(signal_received))
+        print("\nExiting from signal interupt")
         simulation.stop()
         sys.exit(0)
 
