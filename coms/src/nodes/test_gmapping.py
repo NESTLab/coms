@@ -3,7 +3,7 @@ import rospy
 import numpy as np
 from nav_msgs.srv import GetMap, GetMapResponse
 from nav_msgs.msg import OccupancyGrid
-from mapmerge.ros_utils import pgm_to_numpy
+from mapmerge.ros_utils import pgm_to_numpy, numpy_to_ros
 
 class TestGMAPPING:
     def __init__(self):
@@ -32,7 +32,7 @@ class TestGMAPPING:
         self.seq += 1
         occ = OccupancyGrid()
         occ.header.seq = self.seq
-        occ.data = list(self.map.flatten())
+        occ.data = list(numpy_to_ros(self.map.flatten()))
         return GetMapResponse(occ)
 
 

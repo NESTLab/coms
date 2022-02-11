@@ -53,19 +53,19 @@ class NetSimMerger(ROSMerger):
                 rospy.loginfo("service call failed: %s" % e)
             self.rate.sleep()
 
-    def get_netsim_map(self, req: TriggerMergeRequest):
-        """
-        use network simulation to trade maps with another robot
-        """
-        return self.netsim_coms()
+    # def get_netsim_map(self, req: TriggerMergeRequest):
+    #     """
+    #     use network simulation to trade maps with another robot
+    #     """
+    #     return self.netsim_coms()
 
-    def netsim_coms(self, robot, map) -> OccupancyGrid:
-        pass
+    # def netsim_coms(self, robot, map) -> OccupancyGrid:
+    #     pass
 
-    def run(self):
-        while 1:
-            if merge:
-                self.netsim_coms()
+    # def run(self):
+    #     while 1:
+    #         if merge:
+    #             self.netsim_coms()
 
 
 if __name__ == '__main__':
