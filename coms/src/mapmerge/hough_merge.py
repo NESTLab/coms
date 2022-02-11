@@ -3,9 +3,9 @@ from skimage.transform import hough_line, hough_line_peaks
 import matplotlib.pyplot as plt
 import scipy
 import cv2
-from merge_utils import apply_warp, acceptance_index
+from mapmerge.merge_utils import apply_warp, acceptance_index
 
-from constants import *
+from mapmerge.constants import *
 
 def hough_spectrum_calculation(image):
     h, theta, d = hough_map_transform(image)

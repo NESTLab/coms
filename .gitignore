@@ -58,6 +58,9 @@ CATKIN_IGNORE
 # VSCode
 .vscode
 
+# Pycharm
+.idea/
+
 # macOS cache
 .DS_Store
 

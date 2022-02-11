@@ -64,7 +64,7 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
 #   make install;
 
 # Install extra dependencies
-RUN pip3 install pyquaternion; \
+RUN pip3 install pyquaternion scikit-image; \
   sudo apt-get install -y iproute2 ros-noetic-catkin python3-catkin-tools; \
   rosdep init; \
   rosdep update; \
