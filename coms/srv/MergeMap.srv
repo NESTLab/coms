@@ -1,0 +1,4 @@
+# map to be merged in
+nav_msgs/OccupancyGrid map
+---
+bool success

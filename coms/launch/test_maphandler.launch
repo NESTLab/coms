@@ -1,0 +1,23 @@
+<launch>
+    <arg name='robot_name' default='test_bot' />
+    <arg name='map_service' default='dynamic_map'/>
+
+    <node name='merge_handler' pkg='coms' type='merge_handler.py' output="screen">
+        <param name="robot_name" value="$(arg robot_name)"/>
+        <param name="map_service" value="$(arg map_service)"/>
+    </node>
+
+    <node name='gmapping_merger' pkg='coms' type='gmapping_merger.py' output="screen">
+        <param name="robot_name" value="$(arg robot_name)"/>
+        <param name="map_service" value="$(arg map_service)"/>
+    </node>
+
+    <node name='test_amcl' pkg='coms' type='test_amcl.py' output="screen">
+        <param name="robot_name" value="$(arg robot_name)"/>
+    </node>
+
+    <node name='test_gmapping' pkg='coms' type='test_gmapping.py' output="screen">
+        <param name="robot_name" value="$(arg robot_name)"/>
+        <param name="map_service" value="$(arg map_service)"/>
+    </node>
+</launch>

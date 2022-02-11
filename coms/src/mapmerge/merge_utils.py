@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-from constants import *
+from mapmerge.constants import *
 
 def load_mercer_map(txt_path, dtype=np.uint8):
     """
