@@ -40,13 +40,9 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main"
     echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc; \
     apt-get install -y python3-rosdep python3-rosinstall ros-noetic-turtlebot3 ros-noetic-dwa-local-planner ros-noetic-gmapping ros-noetic-rviz python3-rosinstall-generator python3-wstool build-essential python3-rosdep;
 
-# # # # # # # # # # # # # # # # # # # # # #
-# Re-add when gazebo and ARGos are needed #
-# # # # # # # # # # # # # # # # # # # # # #
-
 # Install Gazebo
-# RUN wget -O /tmp/gazebo5_install.sh http://osrf-distributions.s3.amazonaws.com/gazebo/gazebo5_install.sh; sudo sh /tmp/gazebo5_install.sh; \
-#     echo "export TURTLEBOT3_MODEL=burger" >> ~/.bashrc;
+RUN wget -O /tmp/gazebo5_install.sh http://osrf-distributions.s3.amazonaws.com/gazebo/gazebo5_install.sh; sudo sh /tmp/gazebo5_install.sh; \
+    echo "export TURTLEBOT3_MODEL=burger" >> ~/.bashrc;
 
 # Build ARGos3 from source
 # RUN apt-get install -y cmake libfreeimage-dev libfreeimageplus-dev \
