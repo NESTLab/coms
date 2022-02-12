@@ -68,8 +68,6 @@ RUN pip3 install pyquaternion scikit-image; \
   echo "cd /root/catkin_ws;" >> ~/.bashrc; \
   echo "source /root/catkin_ws/devel/setup.bash;" >> ~/.bashrc;
 
-COPY ./entrypoint.sh /app/entrypoint.sh
-
 EXPOSE 8080
 
-CMD ["/app/entrypoint.sh"]
+CMD ["/root/catkin_ws/src/entrypoint.sh"]

@@ -27,8 +27,8 @@ cd /root/catkin_ws
 # Install ROS Packages
 rosdep install -i --from-path /root/catkin_ws/src --rosdistro $ROS_DISTRO -y
 # Enforce C++ language standard
-catkin config --cmake-args -DCMAKE_CXX_STANDARD=20 -DPYTHON_EXECUTABLE=/usr/bin/python3
+catkin config --cmake-args -DCMAKE_CXX_STANDARD=17 -DPYTHON_EXECUTABLE=/usr/bin/python3
 # Make the project
-catkin_make --cmake-args -DCMAKE_CXX_STANDARD=20 -DPYTHON_EXECUTABLE=/usr/bin/python3
+catkin_make --cmake-args -DCMAKE_CXX_STANDARD=17 -DPYTHON_EXECUTABLE=/usr/bin/python3
 
 exec supervisord -c /app/supervisord.conf
