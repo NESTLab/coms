@@ -2,7 +2,7 @@ import socket
 import select
 import yaml
 import netifaces
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from coms.constants import RESPONSE_TIMEOUT, ENCODING, STATIC_LISTENER_PORT, BROADCASTER_PORT_PREFIX, LISTENER_PORT_PREFIX # noqa: E501
 from subprocess import check_output
 from roslaunch.parent import ROSLaunchParent
@@ -100,3 +100,7 @@ def start_roscore() -> ROSLaunchParent:
 
 def stop_roscore(parent: ROSLaunchParent) -> None:
     parent.shutdown()
+
+
+def addr_to_str(addr: Tuple[str, int]) -> str:
+    return "{0}:{1}".format(addr[0], addr[1])

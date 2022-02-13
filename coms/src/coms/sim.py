@@ -7,9 +7,10 @@ from threading import Lock
 from typing import List, Tuple
 from subprocess import check_output, call
 from std_msgs.msg import String
+from coms.msg import nearby
 from msg.ping import Ping
 from coms.constants import QUICK_WAIT_TIMER, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, NET_CONFIG, SUB_TOPIC, PUB_TOPIC # noqa: E501
-from coms.utils import get_interface_from_ip, get_port_from, get_ip_list, get_device_numbers
+from coms.utils import get_interface_from_ip, get_port_from, get_ip_list, get_device_numbers, addr_to_str
 from coms.server import server, send_messsage
 from concurrent.futures import ThreadPoolExecutor, Future
 
@@ -78,7 +79,9 @@ class Sim():
             raise Exception("Broadcaster" + self.LISTEN_ADDRESS[0] + "could not retrieve a valid network interface!")
         local_addr = (self.LISTEN_ADDRESS[0], get_port_from(self.LISTEN_ADDRESS[0], False))
         while self.keep_runing.locked():
-            for neighbor in self.get_reachable_ips(nic):
+            neighbors = self.get_reachable_ips(nic)
+            self.publish_nearby_robots(neighbors)
+            for neighbor in neighbors:
                 send_messsage(
                     nic=nic,
                     destination=neighbor,
@@ -112,7 +115,7 @@ class Sim():
     def register_ros_topics(self: Sim) -> None:
         self.pub = rospy.Publisher(
             name=PUB_TOPIC,
-            data_class=String,
+            data_class=nearby,
             queue_size=10)
 
         # NOTE: The Subscriber callback only accepts two params (according to the docs)
@@ -133,6 +136,18 @@ class Sim():
     def listen_handler(self: Sim, msg: any, cb_args: any) -> None:
         rospy.loginfo("GOT MESSAGE")
         print('got -> ', msg.data)
+
+    def publish_nearby_robots(self: Sim, addresses: List[Tuple[str, int]]) -> None:
+        if len(addresses) == 0:
+            return
+        addr_strings = []
+        for addr in addresses:
+            if addr[0] != self.LISTEN_ADDRESS[0]:
+                addr_strings.append(addr_to_str(addr))
+        payload = nearby()
+        payload.remote_addresses = addr_strings
+        payload.local_address = addr_to_str(self.LISTEN_ADDRESS)
+        self.pub.publish(payload)
 
 
 def is_sim_network_running(local_ips: List[str]) -> bool:
