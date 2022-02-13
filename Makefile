@@ -11,6 +11,10 @@ test-ping:
 	$(SETUP); \
 	python3 -m unittest $(WORKDIR)/coms/tests/test_ping.py
 
+test-sim:
+	$(SETUP); \
+	python3 -m unittest $(WORKDIR)/coms/tests/test_sim.py
+
 coverage:
 	$(SETUP); \
 	export COVERALLS_REPO_TOKEN=$(COVERALLS_REPO_TOKEN); \

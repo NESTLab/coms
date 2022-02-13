@@ -54,6 +54,11 @@ catkin_python_setup()
 #   Message2.msg
 # )
 
+add_message_files(
+  FILES
+  nearby.msg
+)
+
 ## Generate services in the 'srv' folder
 add_service_files(
    FILES
@@ -107,6 +112,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES my_robot_common
   CATKIN_DEPENDS rospy
+  CATKIN_DEPENDS message_runtime
   std_msgs
   nav_msgs
   message_runtime

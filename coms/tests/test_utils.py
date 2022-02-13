@@ -2,8 +2,8 @@ import unittest
 import socket
 import rospy
 from typing import List
-from subprocess import check_output, call, Popen
-from coms.utils import readable, writable, get_ip_list, get_interface_from_ip, get_device_numbers, gen_bound_socket, start_roscore, stop_roscore # noqa: E501
+from subprocess import check_output, call
+from coms.utils import readable, writable, get_ip_list, get_interface_from_ip, get_device_numbers, gen_bound_socket, start_roscore, stop_roscore, addr_to_str # noqa: E501
 from coms.constants import CATKIN_WS, ENCODING, NET_CONFIG
 from roslaunch.parent import ROSLaunchParent
 
@@ -71,6 +71,17 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(rospy.get_published_topics("/"), [], "roscore not running")
         stop_roscore(parent)
         self.assertRaises(OSError, rospy.get_published_topics, "/")
+
+    def test_addr_to_str(self: unittest.TestCase) -> None:
+        tests = [
+            (("", 0), ":0"),
+            (("192.168.0.1", 177), "192.168.0.1:177"),
+            (("1", 1), "1:1")
+        ]
+        for t in tests:
+            got = addr_to_str(t[0])
+            expects = t[1]
+            self.assertEqual(got, expects)
 
 
 if __name__ == '__main__':
