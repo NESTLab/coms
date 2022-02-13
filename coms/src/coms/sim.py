@@ -138,6 +138,8 @@ class Sim():
         print('got -> ', msg.data)
 
     def publish_nearby_robots(self: Sim, addresses: List[Tuple[str, int]]) -> None:
+        if len(addresses) == 0:
+            return
         addr_strings = []
         for addr in addresses:
             if addr[0] != self.LISTEN_ADDRESS[0]:

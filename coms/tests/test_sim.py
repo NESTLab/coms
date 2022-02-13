@@ -217,6 +217,14 @@ class TestSim(unittest.TestCase):
         self.assertEqual(sim.sub.resolved_name, None, "Subscriber was not unregistered")
 
     def test_publish_nearby_robots(self: unittest.TestCase) -> None:
+        # No nearby robots found
+        sim = Sim(LOOPBACK_ADDRESS, DEFAULT_NET_SIM_LAUNCH_FILE)
+        addresses_near = []
+        sim.pub = MagicMock()
+        sim.pub.publish = Mock()
+        sim.publish_nearby_robots(addresses_near)
+        self.assertEqual(sim.pub.publish.call_count, 0, "No nearby message should be published")
+        # Multiple robots nearby
         sim = Sim(LOOPBACK_ADDRESS, DEFAULT_NET_SIM_LAUNCH_FILE)
         addresses_near = [
             (LAUNCH_CONFIG_LOCAL_IPS[0], 123),
