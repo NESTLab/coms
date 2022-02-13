@@ -103,6 +103,7 @@ class TestSim(unittest.TestCase):
         s1 = Sim(LAUNCH_CONFIG_LOCAL_IPS[0], DEFAULT_NET_SIM_LAUNCH_FILE)
         s2 = Sim(LAUNCH_CONFIG_LOCAL_IPS[1], DEFAULT_NET_SIM_LAUNCH_FILE)
         s1.start()
+        time.sleep(3)
         for task in s1.thread_tasks:
             self.assertEqual(task.running(), True)
         s2.start()
@@ -129,10 +130,6 @@ class TestSim(unittest.TestCase):
         # No NIC for IP address
         s1 = Sim('68.0.206.67', DEFAULT_NET_SIM_LAUNCH_FILE)
         self.assertRaises(Exception, s1._broadcaster)
-        # Clear execution with unaquired lock
-        s1 = Sim(LOOPBACK_ADDRESS, DEFAULT_NET_SIM_LAUNCH_FILE)
-        s1._broadcaster()
-        # !IMPORTANT: If our tests block, this will be the culpret
 
         # Send messages to neighbors
         with patch("coms.sim.send_messsage") as s:
