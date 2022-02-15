@@ -1,7 +1,8 @@
 SHELL=bash
-WORKDIR=/root/catkin_ws/src
 SETUP=source /opt/ros/noetic/setup.bash;source /root/catkin_ws/devel/setup.bash
 COVERALLS_REPO_TOKEN=Vqz48pxOpQ8k0D7yp4tQs3LUVTaSEqIcj
+PATH_TO_MAKEFILE=$(abspath $(lastword $(MAKEFILE_LIST)))
+WORKDIR=$(shell dirname $(PATH_TO_MAKEFILE))
 
 test:
 	$(SETUP); \
@@ -24,4 +25,12 @@ coverage:
 
 check-health:
 	source $(WORKDIR)/health-check.sh
+
+install-deps:
+	pip install -r $(WORKDIR)/coms/requirements-dev.txt; \
+	pip install -r $(WORKDIR)/coms/requirements.txt
+
+install-coms:
+	install-deps; \
+	pip install -e $(WORKDIR)/coms
 
