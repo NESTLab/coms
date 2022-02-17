@@ -1,3 +1,4 @@
+# TODO @cjmclaughlin PAD SMALLER OF TWO MAPS WITH UNKNOWN
 import numpy as np
 import cv2
 from mapmerge.constants import *
