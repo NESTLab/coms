@@ -7,8 +7,14 @@ Distributed Communication Protocol for Robots running [ROS1](https://www.ros.org
 ## Overview 🔍
 Coms acts as a middleman between all network traffic, regardless of the deployment environment. It takes care of all robot-to-robot communications, whether they are deployed on raspberry pis, or run within a simulation environment such as Gazebo. This package enables your ROS nodes to rely on a standard communication protocol for external message passing. In essence, Coms works as a ROS1 implementation of a multi-master approach for orchestrating distributed ad-hoc networks.
 
-## ROS Topic 💬
-<mark>TODO: Describe how inter-host communication works</mark>
+## ROS Topics 💬
+For simulations, the Sim._broadcaster sends a `nearby.msg` to the `/nearby_robots` topic whenever it sees another robot in line of site. Different physics simulations, such as ARGos and Gazebo, have their own way of determining line-of-site. Based on the configuration run by
+the `ros-net-sim` package, a given physics_sim may be invoked to match the robot's environment.
+
+ARGos3 - Line-of-site topics are generated for each robot run within its physics engine.
+The broadcaster subscribes to a given `/robot<num>/line-of-site` topic and re-broadcasts them on a regular interval to the `/nearby_robots` topic for other ROS nodes.
+
+Gazebo - TODO
 
 ## Message Handling ❌
 Each robot running a Coms node is required to choose a __unique static IP__ that will not conflict with other robots. When each robot is within proximity with each other, they attempt to establish a connection. Network conditions vary depending on the deployment environment, which can result in abrupt disconnection or packet loss. For this reason, each message may define the number of retires, timeout, and error handler to manage failures.
