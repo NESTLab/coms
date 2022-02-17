@@ -1,4 +1,6 @@
 import unittest
+import pathlib
+import os
 import time
 import rospy
 from typing import List
@@ -10,10 +12,12 @@ from coms.sim import Sim, is_sim_network_running, launch_sim_network, terminate_
 from coms.constants import STATIC_LISTENER_PORT, PUB_TOPIC, SUB_TOPIC
 from roslaunch import parent
 from coms.utils import get_port_from, start_roscore, stop_roscore
-from mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
-
-DEFAULT_NET_SIM_LAUNCH_FILE = "/root/catkin_ws/src/ros-net-sim/example/launch/gazebo.launch"
+TEST_DIR = pathlib.Path(__file__).parent.absolute()
+COMS_DIR = TEST_DIR.parent.absolute()
+PROJECT_BASE_DIR = COMS_DIR.parent.absolute()
+DEFAULT_NET_SIM_LAUNCH_FILE = os.path.join(PROJECT_BASE_DIR, "ros-net-sim/example/launch/gazebo.launch")
 LAUNCH_CONFIG_LOCAL_IPS = ["192.168.0.1", "192.168.0.2", "192.168.0.3"]
 LOOPBACK_ADDRESS = '127.0.0.1'
 
