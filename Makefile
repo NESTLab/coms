@@ -34,3 +34,7 @@ install-coms:
 	install-deps; \
 	pip install -e $(WORKDIR)/coms
 
+argos:
+	$(SETUP); \
+	argos3 -c $(WORKDIR)/argos_bridge/argos_worlds/multi_robots.argos
+
