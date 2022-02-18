@@ -22,7 +22,7 @@ def recover_transformation(merge_fn):
     return map1, map2, map2_transform
 
 
-class TestMerge(unittest.TestCase):
+class TestMapMerge(unittest.TestCase):
     def test_sift_merge(self, num_trials=25, target_iou=0.95):
         """
         SIFT merge IoU should be > 0.95 for all transformations
