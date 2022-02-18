@@ -30,7 +30,6 @@ install-deps:
 	pip install -r $(WORKDIR)/coms/requirements-dev.txt; \
 	pip install -r $(WORKDIR)/coms/requirements.txt
 
-install-coms:
-	install-deps; \
+install-coms: install-deps; \
 	pip install -e $(WORKDIR)/coms
 
