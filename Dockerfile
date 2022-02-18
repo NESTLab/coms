@@ -45,29 +45,49 @@ RUN wget -O /tmp/gazebo5_install.sh http://osrf-distributions.s3.amazonaws.com/g
     echo "export TURTLEBOT3_MODEL=burger" >> ~/.bashrc;
 
 # Build ARGos3 from source
-# RUN apt-get install -y cmake libfreeimage-dev libfreeimageplus-dev \
-#   qt5-default freeglut3-dev libxi-dev libxmu-dev liblua5.3-dev \
-#   lua5.3 doxygen graphviz libgraphviz-dev asciidoc; \
-#   git clone https://github.com/ilpincy/argos3.git; \
-#   cd argos3; \
-#   mkdir build_simulator; \
-#   cd build_simulator; \
-#   cmake ../src; \
-#   make; \
-#   make doc; \
-#   echo '/usr/local/lib' >> /etc/ld.so.conf; \
-#   echo "sudo ldconfig" >> ~/.bashrc; \
-#   make install;
+RUN apt-get install -y libgsl-dev cmake libfreeimage-dev libfreeimageplus-dev \
+  qt5-default freeglut3-dev libxi-dev libxmu-dev liblua5.3-dev \
+  lua5.3 doxygen graphviz libgraphviz-dev asciidoc; \
+  git clone https://github.com/ilpincy/argos3.git; \
+  cd argos3; \
+  mkdir build_simulator; \
+  cd build_simulator; \
+  cmake ../src; \
+  make; \
+  make doc; \
+  echo '/usr/local/lib' >> /etc/ld.so.conf; \
+  echo "sudo ldconfig" >> ~/.bashrc; \
+  make install
+
+# Install kheperaiv robot to ARGos3
+RUN git clone https://github.com/ilpincy/argos3-kheperaiv.git; \
+  cd argos3-kheperaiv && mkdir build_sim && cd build_sim; \
+  cmake -DCMAKE_BUILD_TYPE=Release ../src; \
+  make; \
+  sudo make install
 
 # Install extra dependencies
-RUN pip3 install pyquaternion scikit-image; \
-  sudo apt-get install -y iproute2 ros-noetic-catkin python3-catkin-tools; \
-  rosdep init; \
+RUN sudo apt-get update; \
+  sudo apt-get upgrade -y; \
+  sudo apt-get install -y \
+    python-is-python3 \
+    ros-noetic-octomap \
+    ros-noetic-octomap-msgs \
+    iproute2 \
+    ros-noetic-catkin \
+    python3-catkin-tools \
+    libtf2-ros-dev
+
+# Add ROS dependent scripts
+RUN rosdep init; \
   rosdep update; \
   mkdir -p /root/catkin_ws/src; \
   echo "cd /root/catkin_ws;" >> ~/.bashrc; \
-  echo "source /root/catkin_ws/devel/setup.bash;" >> ~/.bashrc;
-
+  echo "source /root/catkin_ws/devel/setup.bash;" >> ~/.bashrc; \
+  echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/argos3:/opt/ros/noetic/lib" >> ~/.bashrc; \
+  echo "export ARGOS_PLUGIN_PATH=$HOME/catkin_ws/src/argos_bridge/ros_lib_links" >> ~/.bashrc; \
+  echo "export ARGOS_PLUGIN_PATH=$ARGOS_PLUGIN_PATH:$HOME/catkin_ws/devel/lib" >> ~/.bashrc; \
+  echo "export LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libgomp.so.1" >> ~/.bashrc
 EXPOSE 8080
 
 CMD ["/root/catkin_ws/src/entrypoint.sh"]
