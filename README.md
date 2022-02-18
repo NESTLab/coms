@@ -1,5 +1,5 @@
 [![Build Status](https://app.travis-ci.com/NESTLab/coms.svg?branch=main)](https://app.travis-ci.com/NESTLab/coms)
-[![Coverage Status](https://coveralls.io/repos/github/NESTLab/coms/badge.svg?branch=main)](https://coveralls.io/github/NESTLab/coms?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/NESTLab/coms/badge.svg?branch=HEAD)](https://coveralls.io/github/NESTLab/coms?branch=HEAD)
 
 # Coms 📡
 Distributed Communication Protocol for Robots running [ROS1](https://www.ros.org).
