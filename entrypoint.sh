@@ -16,6 +16,8 @@ case $RUN_XTERM in
     ;;
 esac
 
+# Upgrade pip
+python -m pip install -U pip
 # Install dev packages
 pip install -r /root/catkin_ws/src/coms/requirements-dev.txt
 pip install -r /root/catkin_ws/src/coms/requirements.txt
