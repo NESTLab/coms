@@ -1,3 +1,4 @@
+from mapmerge.merge_utils import pad_maps
 import numpy as np
 from keypoint_merge import sift_mapmerge, orb_mapmerge
 from merge_utils import resize_map, combine_aligned_maps, acceptance_index
@@ -13,6 +14,7 @@ def mapmerge_pipeline(map1, map2, method="sift", scale_fix=True):
     - scale_fix: boolean, whether or not to attempt scale-adjusted merge
     """
     merge_fn = sift_mapmerge if method == "sift" else orb_mapmerge
+    map1, map2 = pad_maps(map1, map2)
     if scale_fix:
         for scale in [0.95, 0.975, 1, 1.025, 1.05]:
             ious = []
