@@ -38,6 +38,9 @@ def get_run_args() -> Dict:
         NODE_ENVIRONMENT = args.env
         NODE_NAME = args.name
 
+    print(NODE_NAME)
+    
+
     # Validate all runtime arguments
     if (NODE_NAMESPACE == "" or NODE_NAME == "" or NODE_ENVIRONMENT == "" or NODE_IP == ""
             or (NODE_ENVIRONMENT != "sim" and NODE_ENVIRONMENT != "pi")):
@@ -63,11 +66,11 @@ NODE_ENVIRONMENT: {3}\n===========================\n""".format(
 
 
 def main() -> None:
+    # Initialize ROS node
+    rospy.init_node(name="coms", anonymous=True)
     # Handle runtime arguments
     args: Dict = get_run_args()
     print_run_args(args)
-    # Initialize ROS node
-    rospy.init_node(args["NODE_NAME"])
     # Set fixed update-rate in Hz
     rospy.Rate(float(rospy.get_param('~rate', '2.0')))
     # TODO: Unblock PI environment (when supported)
