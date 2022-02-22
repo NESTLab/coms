@@ -19,6 +19,31 @@ def resize_map(map, dsize):
     """
     return cv2.resize(map, dsize=dsize, interpolation=cv2.INTER_NEAREST)
 
+def pad_maps(map1, map2):
+    """
+    Pad maps with UNKOWN such that they are the same size
+    """
+    # get greatest size in each dimension
+    x, y = max([map1.shape[0], map2.shape[0]]), max([map1.shape[1], map2.shape[2]]) 
+    
+    # create array of UNKNOWNS with size x, y
+    pad_map1 = np.ones(shape=(x, y)) * UNKNOWN
+    pad_map2 = np.ones(shape=(x, y)) * UNKNOWN
+
+    # fill original data from maps, starting at origin (0,0)
+    pad_map1[:map1.shape[0], :map1.shape[1]] = map1
+    pad_map2[:map2.shape[0], :map2.shape[1]] = map2
+
+    return pad_map1, pad_map2
+
+def blur_map(map):
+    """
+    apply gaussian blur to map. can be useful for keypoint merge methods to remove noise.
+    """
+    src = np.copy(map)
+    blur = cv2.GaussianBlur(src, (3, 3), sigmaX=1, sigmaY=1)
+    return blur
+
 def augment_map(map, shift_limit=0.1, rotate_limit=360, fill=UNKNOWN, scale_noise=False):
     """
     apply set of random image augmentation to map image
