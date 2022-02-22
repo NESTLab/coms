@@ -4,7 +4,7 @@ from mapmerge.keypoint_merge import sift_mapmerge, orb_mapmerge
 from mapmerge.merge_utils import resize_map, combine_aligned_maps, acceptance_index
 
 
-def mapmerge_pipeline(map1, map2, method="orb", scale_fix=True):
+def mapmerge_pipeline(map1, map2, method="sift", scale_fix=False):
     """
     end-to-end map merge pipeline for testing
     

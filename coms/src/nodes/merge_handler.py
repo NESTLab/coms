@@ -3,6 +3,7 @@ import rospy
 from coms.srv import MergeMap, MergeMapResponse, MergeMapRequest, TriggerMerge, TriggerMergeResponse, TriggerMergeRequest
 from nav_msgs.srv import GetMap, GetMapResponse, GetMapRequest
 from nav_msgs.msg import OccupancyGrid
+from mapmerge.service import mapmerge_pipeline
 from mapmerge.keypoint_merge import orb_mapmerge
 from mapmerge.ros_utils import pgm_to_numpy, numpy_to_ros, ros_to_numpy
 import numpy as np
@@ -66,8 +67,8 @@ class MergeHandler:
             self.bag.write('map', msg)
 
 
-        breakpoint()
-        MergeHandler.parse_and_save(msg, self.latest_map)
+        # breakpoint()
+        # MergeHandler.parse_and_save(msg, self.latest_map)
         # unpack gmapping
         new_map = ros_to_numpy(msg.data).reshape(-1,msg.info.width)
         self.merge_map(new_map)
@@ -107,11 +108,11 @@ class MergeHandler:
             return True
 
         try:
-            print(new_map.shape)
-            print(self.latest_map.shape)
-            merged = orb_mapmerge(new_map, self.latest_map)
+            # print(new_map.shape)
+            # print(self.latest_map.shape)
+            self.latest_map = mapmerge_pipeline(new_map, self.latest_map)
             # TODO checks and maybe a lock? depends on the rospy callback threading
-            self.latest_map = merged
+            # self.latest_map = merged
             return True
         except Exception as e:
             rospy.logerr(f"Could not merge maps: {e}")
