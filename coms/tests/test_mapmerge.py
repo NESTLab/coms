@@ -1,7 +1,8 @@
 import unittest
 import os
 import pathlib
-from mapmerge.merge_utils import augment_map, load_mercer_map, acceptance_index
+from mapmerge.constants import FREE, OCCUPIED
+from mapmerge.merge_utils import augment_map, load_mercer_map, acceptance_index, pad_maps, resize_map
 from mapmerge.keypoint_merge import sift_mapmerge, orb_mapmerge
 from mapmerge.hough_merge import hough_mapmerge
 import numpy as np
@@ -57,6 +58,30 @@ class TestMerge(unittest.TestCase):
             map1, map2, map2_transform = recover_transformation(lambda m1, m2: hough_mapmerge(m1, m2, num=5, robust=True))
             ious.append(acceptance_index(map1, map2_transform))
         self.assertGreaterEqual(np.mean(ious), target_iou)
+
+    def test_merge_padding(self: unittest) -> None:
+        """
+        Helper for handling merges across varying resolution maps
+        """
+        # create pair of maps with different resolutions
+        map1 = INTEL_TEST_MAP
+        map2 = resize_map(map1, (map1.shape[0]//2, map1.shape[1]//2))
+        
+        map1_pad, map2_pad = pad_maps(map1, map2)
+
+        # map1 (larger) should not have been changed
+        self.assertTrue(np.alltrue(map1_pad == map1))
+
+        # map2 should have the same shape as map1 and same # of known/unknown cells
+        self.assertTrue(map1_pad.shape == map2_pad.shape)
+        num_occupied_original = np.sum(np.where(map2 == OCCUPIED, 1, 0))
+        num_free_original = np.sum(np.where(map2 == FREE, 1, 0))
+        num_occupied_pad = np.sum(np.where(map2_pad == OCCUPIED, 1, 0))
+        num_free_pad = np.sum(np.where(map2_pad == FREE, 1, 0))
+        self.assertTrue(num_free_original == num_free_pad)
+        self.assertTrue(num_occupied_original == num_occupied_pad)
+
+        # TODO @cjmclaughlin test for integration in ArGos/Gazebo env.
 
 
 if __name__ == '__main__':
