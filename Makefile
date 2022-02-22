@@ -38,7 +38,7 @@ install-argos-net-sim:
 
 install: install-coms install-argos-net-sim
 
-argos:
+argos-demo:
 	$(SETUP); \
 	argos3 -c $(WORKDIR)/argos_bridge/argos_worlds/multi_robots.argos
 
