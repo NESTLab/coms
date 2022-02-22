@@ -7,11 +7,10 @@ from mapmerge.merge_utils import blur_map, apply_warp, pad_maps
 
 
 def sift_mapmerge(map1, map2):
-    # map1, map2 = blur_map(map1), blur_map(map2)
+    map1, map2 = pad_maps(map1, map2)
     try:
-        map1, map2 = pad_maps(map1, map2)
         sift = cv2.SIFT_create()
-        kp1, desc1 = sift.detectAndCompute(blur_map(map1), None)
+        kp1, desc1 = sift.detectAndCompute(blur_map(map1), None)  # TODO eval with and without blur
         kp2, desc2 = sift.detectAndCompute(blur_map(map2), None)
         index_params = dict(algorithm=0, trees=5)
         search_params = dict(checks=150)
@@ -34,9 +33,8 @@ def sift_mapmerge(map1, map2):
 
 
 def orb_mapmerge(map1, map2):
-    # map1, map2 = blur_map(map1), blur_map(map2)
+    map1, map2 = pad_maps(map1, map2)
     try:
-        map1, map2 = pad_maps(map1, map2)    
         orb = cv2.ORB_create(nfeatures=1000)
         kp1, desc1 = orb.detectAndCompute(blur_map(map1), None)
         kp2, desc2 = orb.detectAndCompute(blur_map(map2), None)
