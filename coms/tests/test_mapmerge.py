@@ -1,8 +1,8 @@
 import unittest
 import os
 import pathlib
-from mapmerge.constants import FREE, OCCUPIED
-from mapmerge.merge_utils import augment_map, load_mercer_map, acceptance_index, pad_maps, resize_map
+from mapmerge.constants import FREE, OCCUPIED, UNKNOWN
+from mapmerge.merge_utils import augment_map, detect_fault, load_mercer_map, acceptance_index, pad_maps, resize_map
 from mapmerge.keypoint_merge import sift_mapmerge, orb_mapmerge
 from mapmerge.hough_merge import hough_mapmerge
 import numpy as np
@@ -82,6 +82,31 @@ class TestMerge(unittest.TestCase):
         self.assertTrue(num_occupied_original == num_occupied_pad)
 
         # TODO @cjmclaughlin test for integration in ArGos/Gazebo env.
+
+    def test_fail_merge(self: unittest) -> None:
+        """
+        Assert that failure checking catches invalid map merges
+        """
+        # positive example - SIFT for instance should have successful merge in most basic case
+        map1, map2, map2_transform = recover_transformation(sift_mapmerge)
+        self.assertTrue(detect_fault(map1, map2, map2_transform))  # returns True on successful merge
+
+        # negative example 1 - merge results in empty image
+        unknown_mask = np.ones_like(map2_transform) * UNKNOWN
+        self.assertRaises(AssertionError, detect_fault, map1, map2, unknown_mask)
+
+        # negative example 2 - merge results in information loss (walls)
+        # for example, replace all walls with unknown 
+        failure_map1 = np.where(map2_transform == OCCUPIED, UNKNOWN, map2_transform)
+        self.assertRaises(AssertionError, detect_fault, map1, map2, failure_map1)
+
+        # negative example 3 - merge results in information loss (overall)
+        # replace 30% of free cells with unknown
+        noise = np.random.choice([0, 1], size=map2_transform.shape, p=[0.3, 0.7])
+        failure_map2 = np.where(noise == 1, UNKNOWN, map2_transform)
+        self.assertRaises(AssertionError, detect_fault, map1, map2, failure_map2)
+
+        # TODO @cjmclaughlin install further integration tests if initial simulation deems it necessary
 
 
 if __name__ == '__main__':

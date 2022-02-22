@@ -44,6 +44,37 @@ def blur_map(map):
     blur = cv2.GaussianBlur(src, (3, 3), sigmaX=1, sigmaY=1)
     return blur
 
+def detect_fault(map1, map2, merged):
+    """
+    given a pair of maps and their predicted merge
+    evaluate if the merged map is valid
+
+    optional args: 
+        - quick_check (bool): whether or not abbreviated fault check should be used
+    """
+    # check 1: merged map should retain at least 90% of information (non-unknown cells)
+    # relative to the initial map with the most information
+    def count_information(map):
+        num_occ = np.sum(np.where(map == OCCUPIED, 1, 0))
+        num_free = np.sum(np.where(map == FREE, 1, 0))
+        num_info = num_occ + num_free
+        return num_occ, num_free, num_info
+    
+    map1_occ, map1_free, map1_info = count_information(map1)
+    map2_occ, map2_free, map2_info = count_information(map2)
+    merge_occ, merge_free, merge_info = count_information(merged)
+
+    info_to_retain = 0.9 * max(map1_info, map2_info)
+    assert merge_info >= info_to_retain, "Attempted merge lost too much information (Overall)."
+
+    # additionally, we can check that individual types of information were not corrupted
+    occ_to_retain = 0.75 * max(map1_occ, map2_occ)
+    free_to_retain = 0.75 * max(map1_free, map2_free)
+    assert merge_occ >= occ_to_retain, "Attempted merge lost too much information (Occupied)."
+    assert merge_free >= free_to_retain, "Attempted merge lost too much information (Free)."
+
+    return True  # passed all checks
+
 def augment_map(map, shift_limit=0.1, rotate_limit=360, fill=UNKNOWN, scale_noise=False):
     """
     apply set of random image augmentation to map image
@@ -81,16 +112,6 @@ def get_training_sample(map_filename, shift_limit=0.1, rotate_limit=360):
     map = load_mercer_map(map_filename)
     aug_map, labels = augment_map(map, shift_limit=shift_limit, rotate_limit=rotate_limit)
     return map, aug_map
-
-def show_samples():
-    """
-    Display set of samples from current training set (defined in constants)
-    """
-    for map_idx in range(len(TRAIN_FILENAMES)):
-        intel = load_mercer_map(TRAIN_FILENAMES[map_idx])
-        plt.imshow(intel, cmap="gray")
-        plt.axis("off")
-        plt.show()
 
 def apply_warp(map, M, fill=UNKNOWN):
     """
