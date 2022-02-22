@@ -109,21 +109,21 @@ class TestMerge(unittest.TestCase):
 
         # TODO @cjmclaughlin install further integration tests if initial simulation deems it necessary
 
-    def test_simulation_merge(self: unittest) -> None:
-        """
-        Test merge using initial data from simulation
-        """
-        old_maps = [ os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy') for i in range(9) ]
-        maps = [ os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy') for i in range(9) ]
+    # def test_simulation_merge(self: unittest) -> None:
+    #     """
+    #     Test merge using initial data from simulation
+    #     """
+    #     old_maps = [ os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy') for i in range(9) ]
+    #     maps = [ os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy') for i in range(9) ]
 
-        for i in range(9):
-            fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 10))
-            merge = orb_mapmerge(maps[i], old_maps[i])
-            merge = combine_aligned_maps(merge, maps[i])
-            axes[0].imshow(maps[i])
-            axes[1].imshow(old_maps[i])
-            axes[2].imshow(merge)
-            plt.show()
+    #     for i in range(9):
+    #         fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 10))
+    #         merge = orb_mapmerge(maps[i], old_maps[i])
+    #         merge = combine_aligned_maps(merge, maps[i])
+    #         axes[0].imshow(maps[i])
+    #         axes[1].imshow(old_maps[i])
+    #         axes[2].imshow(merge)
+    #         plt.show()
 
 
 
@@ -142,17 +142,17 @@ if __name__ == '__main__':
     #     axes[1][i].set_title("not old")
     # plt.show()
 
-    old_maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy')) for i in range(9) ]
-    maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy')) for i in range(9) ]
+    # old_maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy')) for i in range(9) ]
+    # maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy')) for i in range(9) ]
 
-    for i in range(9):
-        fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 10))
-        merge = orb_mapmerge(maps[i], old_maps[i])
-        merge = combine_aligned_maps(merge, maps[i])
-        axes[0].imshow(maps[i])
-        axes[1].imshow(old_maps[i])
-        axes[2].imshow(merge)
-        plt.show()
+    # for i in range(9):
+    #     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 10))
+    #     merge = orb_mapmerge(maps[i], old_maps[i])
+    #     merge = combine_aligned_maps(merge, maps[i])
+    #     axes[0].imshow(maps[i])
+    #     axes[1].imshow(old_maps[i])
+    #     axes[2].imshow(merge)
+    #     plt.show()
     
     
-    # unittest.main()
+    unittest.main()

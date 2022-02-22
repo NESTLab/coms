@@ -14,7 +14,7 @@ def sift_mapmerge(map1, map2):
         kp1, desc1 = sift.detectAndCompute(map1, None)
         kp2, desc2 = sift.detectAndCompute(map2, None)
         index_params = dict(algorithm=0, trees=5)
-        search_params = dict(checks=50)
+        search_params = dict(checks=200)
         flann = cv2.FlannBasedMatcher(index_params, search_params)
         matches = flann.knnMatch(desc1, desc2, k=2)
         good_matches = []
@@ -24,7 +24,7 @@ def sift_mapmerge(map1, map2):
                 good_matches.append(m)
     except:
         # failed merge
-        return np.ones_like(map2) * UNKNOWN
+        return np.ones_like(map2, dtype=np.uint8) * UNKNOWN
     src_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
     dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
@@ -40,7 +40,7 @@ def orb_mapmerge(map1, map2):
         kp1, desc1 = orb.detectAndCompute(map1, None)
         kp2, desc2 = orb.detectAndCompute(map2, None)
         index_params = dict(algorithm=6, trees=6, key_size=12, multi_probe_level=1)
-        search_params = dict(checks=50)
+        search_params = dict(checks=200)
         flann = cv2.FlannBasedMatcher(index_params, search_params)
         matches = flann.knnMatch(desc1, desc2, k=2)
         good_matches = []
@@ -50,7 +50,7 @@ def orb_mapmerge(map1, map2):
                 good_matches.append(m)
     except:
         # failed merge
-        return np.ones_like(map2) * UNKNOWN
+        return np.ones_like(map2, dtype=np.uint8) * UNKNOWN
     src_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
     dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
