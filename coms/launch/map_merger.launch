@@ -1,0 +1,10 @@
+<launch>
+    <arg name="ns" default="robot_1"/>
+    <arg name="starting_map" default=""/>
+
+    <!-- fix the args reading -->
+    <param name="ns" value="$(arg ns)"/>
+    <param name="starting_map" value="$(arg starting_map)"/>
+    <!-- MAP MERGING -->
+    <node name='merge_handler' pkg='coms' type='merge_handler.py' output="screen"/>
+</launch>
