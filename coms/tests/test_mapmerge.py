@@ -3,9 +3,11 @@ import os
 import pathlib
 from mapmerge.constants import FREE, OCCUPIED, UNKNOWN
 from mapmerge.merge_utils import augment_map, combine_aligned_maps, detect_fault, load_mercer_map, acceptance_index, pad_maps, resize_map
+from mapmerge.service import mapmerge_pipeline
 from mapmerge.keypoint_merge import sift_mapmerge, orb_mapmerge
 from mapmerge.hough_merge import hough_mapmerge
 import numpy as np
+
 
 TEST_DIR = pathlib.Path(__file__).parent.absolute()
 
@@ -109,21 +111,21 @@ class TestMerge(unittest.TestCase):
 
         # TODO @cjmclaughlin install further integration tests if initial simulation deems it necessary
 
-    def test_simulation_merge(self: unittest) -> None:
-        """
-        Test merge using initial data from simulation
-        """
-        old_maps = [ os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy') for i in range(9) ]
-        maps = [ os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy') for i in range(9) ]
+    # def test_simulation_merge(self: unittest) -> None:
+    #     """
+    #     Test merge using initial data from simulation
+    #     """
+    #     old_maps = [ os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy') for i in range(9) ]
+    #     maps = [ os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy') for i in range(9) ]
 
-        for i in range(9):
-            fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 10))
-            merge = orb_mapmerge(maps[i], old_maps[i])
-            merge = combine_aligned_maps(merge, maps[i])
-            axes[0].imshow(maps[i])
-            axes[1].imshow(old_maps[i])
-            axes[2].imshow(merge)
-            plt.show()
+    #     for i in range(9):
+    #         fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 10))
+    #         merge = orb_mapmerge(maps[i], old_maps[i])
+    #         merge = combine_aligned_maps(merge, maps[i])
+    #         axes[0].imshow(maps[i])
+    #         axes[1].imshow(old_maps[i])
+    #         axes[2].imshow(merge)
+    #         plt.show()
 
 
 
@@ -148,8 +150,7 @@ if __name__ == '__main__':
     prev_map = maps[0]
     for i in range(9):
         fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(8,6))
-        temp_map = sift_mapmerge(maps[0], prev_map)
-        temp_map = combine_aligned_maps(temp_map, maps[i])
+        temp_map = mapmerge_pipeline(maps[0], prev_map)
         axes[0].imshow(maps[i])
         axes[1].imshow(temp_map)
         axes[2].imshow(prev_map)
