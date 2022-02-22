@@ -24,11 +24,11 @@ def pad_maps(map1, map2):
     Pad maps with UNKOWN such that they are the same size
     """
     # get greatest size in each dimension
-    x, y = max([map1.shape[0], map2.shape[0]]), max([map1.shape[1], map2.shape[2]]) 
+    x, y = max([map1.shape[0], map2.shape[0]]), max([map1.shape[1], map2.shape[1]]) 
     
     # create array of UNKNOWNS with size x, y
-    pad_map1 = np.ones(shape=(x, y)) * UNKNOWN
-    pad_map2 = np.ones(shape=(x, y)) * UNKNOWN
+    pad_map1 = np.ones(shape=(x, y), dtype=np.uint8) * UNKNOWN
+    pad_map2 = np.ones(shape=(x, y), dtype=np.uint8) * UNKNOWN
 
     # fill original data from maps, starting at origin (0,0)
     pad_map1[:map1.shape[0], :map1.shape[1]] = map1
