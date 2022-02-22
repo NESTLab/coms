@@ -33,3 +33,7 @@ install-deps:
 install-coms: install-deps; \
 	pip install -e $(WORKDIR)/coms
 
+install-argos-net-sim:
+	pip install -e $(WORKDIR)/ros-net-sim/network_coordinator
+
+install: install-coms install-argos-net-sim
