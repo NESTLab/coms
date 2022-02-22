@@ -122,12 +122,14 @@ def apply_warp(map, M, fill=UNKNOWN):
     map_warp = cv2.warpAffine(src=map_warp, M=M, dsize=(y, x), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=fill)
     return map_warp
 
-def combine_aligned_maps(map1, map2):
+def combine_aligned_maps(merged_map, original_map):
     """
     combine explored/unexplored regions where possible
+
+    this should be called with pairs of maps that have already been merged (aligned) with one another
     """
-    combined = np.copy(map1)
-    combined = np.where(combined == UNKNOWN, map2, map1)
+    combined = np.copy(merged_map)
+    combined = np.where(combined == UNKNOWN, original_map, merged_map)
     return combined
 
 def agreement(map1, map2):
