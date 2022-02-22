@@ -6,14 +6,16 @@ from nav_msgs.msg import OccupancyGrid
 from mapmerge.keypoint_merge import orb_mapmerge
 from mapmerge.ros_utils import pgm_to_numpy, numpy_to_ros, ros_to_numpy
 import numpy as np
-import matplotlib.pyplot as plt
+import rosbag
 
 
 class MergeHandler:
     def __init__(self):
         # load rospy parameters
-        self.robot_name = rospy.get_param('ns', 'robot_0')
+        self.robot_name = rospy.get_param('ns', 'robot_1')
         self.starting_map_path = rospy.get_param('starting_map', '')
+        self.logging = bool(rospy.get_param('logging', 0))
+        self.debug = bool(rospy.get_param('debug', 1))
 
         # init ros
         rospy.init_node("mergeHandler", anonymous=True)
@@ -23,6 +25,10 @@ class MergeHandler:
         self.map_publisher = rospy.Publisher("merged_map", OccupancyGrid, queue_size=10)
         self.gmapping_subscriber = rospy.Subscriber("map", OccupancyGrid, self.gmapping_cb)
         self.rate = rospy.Rate(10)  # 10hz
+
+        # logging
+        if self.logging:
+            self.bag = rosbag.Bag(f'{self.robot_name}_log.bag', 'w')
 
         # map data
         self.seq = 0
@@ -36,9 +42,12 @@ class MergeHandler:
     def run(self) -> None:
         rospy.loginfo(f'{self.robot_name} merge handler node starting')
         while not rospy.is_shutdown():
-            self.publish_latest()
+            if self.latest_map.any():
+                self.publish_latest()
             self.rate.sleep()
         rospy.loginfo(f'{self.robot_name} merge handler node shutting down')
+        if self.logging:
+            self.bag.close()
 
     def publish_latest(self) -> None:
         occ = self.create_occupancy_msg(self.seq)
@@ -52,13 +61,31 @@ class MergeHandler:
             increase map update speed
             set map transform to remain the same after merges.
         """
+
+        if self.logging:
+            self.bag.write('map', msg)
+
+
+        breakpoint()
+        MergeHandler.parse_and_save(msg, self.latest_map)
         # unpack gmapping
         new_map = ros_to_numpy(msg.data).reshape(-1,msg.info.width)
         self.merge_map(new_map)
 
+    @staticmethod
+    def parse_and_save(msg, old_map):
+        """
+        takes in an occupancy grid and saves it as an npy file
+        """
+        new_map = ros_to_numpy(msg.data).reshape(-1, msg.info.width)
+        with open(f'map_{msg.header.seq}.npy', 'wb') as f:
+            np.save(f, new_map)
+        with open(f'old_map{msg.header.seq}.npy', 'wb') as f:
+            np.save(f, old_map)
+
     # depreciated
     def merge_cb(self, req: MergeMapRequest) -> MergeMapResponse:
-        new_map = ros_to_numpy(req.map.data)
+        new_map = ros_to_numpy(req.map.data).reshape(-1, req.map.info.width)
         return self.merge_map(new_map)
 
     def trigger_merge_cb(self, req: TriggerMergeRequest) -> TriggerMergeResponse:
@@ -119,8 +146,8 @@ class MergeHandler:
         # header
         occ.header.seq = seq
         # metadata
-        occ.info.height = self.inital_shape[0]
-        occ.info.width = self.inital_shape[1]
+        occ.info.height = self.latest_map.shape[0]
+        occ.info.width = self.latest_map.shape[1]
         # data
         occ.data = tuple(numpy_to_ros(self.latest_map.flatten()))
         return occ

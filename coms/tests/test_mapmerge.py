@@ -145,13 +145,15 @@ if __name__ == '__main__':
     old_maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy')) for i in range(9) ]
     maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy')) for i in range(9) ]
 
+    prev_map = maps[0]
     for i in range(9):
-        fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 10))
-        merge = orb_mapmerge(maps[i], old_maps[i])
-        merge = combine_aligned_maps(merge, maps[i])
+        fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(8,6))
+        temp_map = sift_mapmerge(maps[0], prev_map)
+        temp_map = combine_aligned_maps(temp_map, maps[i])
         axes[0].imshow(maps[i])
-        axes[1].imshow(old_maps[i])
-        axes[2].imshow(merge)
+        axes[1].imshow(temp_map)
+        axes[2].imshow(prev_map)
+        prev_map = temp_map
         plt.show()
     
     
