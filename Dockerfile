@@ -67,9 +67,7 @@ RUN git clone https://github.com/ilpincy/argos3-kheperaiv.git; \
   sudo make install
 
 # Install extra dependencies
-RUN pip3 install pyquaternion scikit-image; \
-  pip3 install roslz4 --extra-index-url https://rospypi.github.io/simple/; \
-  sudo apt-get update; \
+RUN sudo apt-get update; \
   sudo apt-get upgrade -y; \
   sudo apt-get install -y \
     python-is-python3 \
@@ -88,8 +86,8 @@ RUN rosdep init; \
   echo "source /root/catkin_ws/devel/setup.bash;" >> ~/.bashrc; \
   echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib/argos3:/opt/ros/noetic/lib" >> ~/.bashrc; \
   echo "export ARGOS_PLUGIN_PATH=$HOME/catkin_ws/src/argos_bridge/ros_lib_links" >> ~/.bashrc; \
-  echo "export ARGOS_PLUGIN_PATH=$ARGOS_PLUGIN_PATH:$HOME/catkin_ws/devel/lib" >> ~/.bashrc
-
+  echo "export ARGOS_PLUGIN_PATH=$ARGOS_PLUGIN_PATH:$HOME/catkin_ws/devel/lib" >> ~/.bashrc; \
+  echo "export LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libgomp.so.1" >> ~/.bashrc
 EXPOSE 8080
 
 CMD ["/root/catkin_ws/src/entrypoint.sh"]
