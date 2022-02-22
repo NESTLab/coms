@@ -15,7 +15,7 @@ def mapmerge_pipeline(map1, map2, method="orb", scale_fix=True):
     """
     merge_fn = sift_mapmerge if method == "sift" else orb_mapmerge
     if scale_fix:
-        for scale in [0.95, 1, 1.05]:
+        for scale in [0.95, 0.975, 1, 1.025, 1.05]:
             ious = []
             merges = []
             map2_scale = resize_map(map2, dsize=(int(map2.shape[0] * scale), int(map2.shape[1] * scale)))
