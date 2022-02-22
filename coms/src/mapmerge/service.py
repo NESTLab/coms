@@ -22,6 +22,7 @@ def mapmerge_pipeline(map1, map2, method="orb", scale_fix=True):
             merges = []
             map2_scale = resize_map(map2, dsize=(int(map2.shape[0] * scale), int(map2.shape[1] * scale)))
             transformed_map2 = merge_fn(map1, map2_scale)
+            transformed_map2 = resize_map(transformed_map2, dsize=map2.shape)
             merged_map = combine_aligned_maps(transformed_map2, map1)
             ious.append(acceptance_index(map1, merged_map))
             merges.append(merged_map)
