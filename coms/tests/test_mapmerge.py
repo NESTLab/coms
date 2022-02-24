@@ -6,6 +6,7 @@ from mapmerge.merge_utils import augment_map, combine_aligned_maps, detect_fault
 from mapmerge.service import mapmerge_pipeline
 from mapmerge.keypoint_merge import sift_mapmerge, orb_mapmerge
 from mapmerge.hough_merge import hough_mapmerge
+from mapmerge.ros_utils import pgm_to_numpy
 import numpy as np
 
 
@@ -111,21 +112,23 @@ class TestMerge(unittest.TestCase):
 
         # TODO @cjmclaughlin install further integration tests if initial simulation deems it necessary
 
-    # def test_simulation_merge(self: unittest) -> None:
-    #     """
-    #     Test merge using initial data from simulation
-    #     """
-    #     old_maps = [ os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy') for i in range(9) ]
-    #     maps = [ os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy') for i in range(9) ]
+    def test_simulation_merge(self: unittest) -> None:
+        """
+        Test merge using initial data from simulation
+        """
+       
 
-    #     for i in range(9):
-    #         fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 10))
-    #         merge = orb_mapmerge(maps[i], old_maps[i])
-    #         merge = combine_aligned_maps(merge, maps[i])
-    #         axes[0].imshow(maps[i])
-    #         axes[1].imshow(old_maps[i])
-    #         axes[2].imshow(merge)
-    #         plt.show()
+        # old_maps = [ os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy') for i in range(9) ]
+        # maps = [ os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy') for i in range(9) ]
+
+        # for i in range(9):
+        #     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 10))
+        #     merge = orb_mapmerge(maps[i], old_maps[i])
+        #     merge = combine_aligned_maps(merge, maps[i])
+        #     axes[0].imshow(maps[i])
+        #     axes[1].imshow(old_maps[i])
+        #     axes[2].imshow(merge)
+        #     plt.show()
 
 
 
@@ -144,18 +147,35 @@ if __name__ == '__main__':
     #     axes[1][i].set_title("not old")
     # plt.show()
 
-    old_maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy')) for i in range(9) ]
-    maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy')) for i in range(9) ]
+    # old_maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy')) for i in range(9) ]
+    # maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy')) for i in range(9) ]
 
-    prev_map = maps[0]
-    for i in range(30):
-        fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(8,6))
-        temp_map = mapmerge_pipeline(maps[0], prev_map)
-        axes[0].imshow(maps[0])
-        axes[1].imshow(temp_map)
-        axes[2].imshow(prev_map)
-        prev_map = temp_map
-        plt.show()
+    # prev_map = maps[0]
+    # for i in range(30):
+    #     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(8,6))
+    #     temp_map = mapmerge_pipeline(maps[0], prev_map)
+    #     axes[0].imshow(maps[0])
+    #     axes[1].imshow(temp_map)
+    #     axes[2].imshow(prev_map)
+    #     prev_map = temp_map
+    #     plt.show()
     
+    fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(12, 8))
     
+    full = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'full_map.pgm'))
+    map1 = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'map_part1.pgm'))
+    map2 = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'map_part2.pgm'))
+    axes[0].imshow(map1, cmap="gray")
+    axes[0].set_title("map1")
+    axes[1].imshow(map2, cmap="gray")
+    axes[1].set_title("map2")
+
+    hough_merge = mapmerge_pipeline(map1, map2, method="hough")
+    axes[2].imshow(hough_merge, cmap="gray")
+    axes[2].set_title("map merge")
+    axes[3].imshow(full, cmap="gray")
+    axes[3].set_title("target (full) map")
+    plt.show()
+
+
     # unittest.main()
