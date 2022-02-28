@@ -86,7 +86,7 @@ def main() -> None:
     # Run simulation environment
     simulation = Sim(
         address=args["NODE_IP"],
-        net_sim_launch_file='/root/catkin_ws/src/ros-net-sim/example/launch/gazebo.launch')
+        net_sim_launch_file='/root/catkin_ws/src/coms/ros-net-sim/example/launch/argos.launch')
 
     def exit_handler(signal_received: signal.Signals, frame: any) -> None:
         print("\nExiting from signal interupt")

@@ -1,14 +1,26 @@
 <launch>
-    <group ns="/local_kheperaiv_net_1">
+    <group ns="/robot_1">
         <node name="coms_net_1" pkg="coms" type="net.py" output="screen">
             <param name="environment" value="sim" />
             <param name="ip" value="192.168.0.1" />
         </node>
     </group>
-    <group ns="/local_kheperaiv_net_2">
+    <group ns="/robot_2">
         <node name="coms_net_2" pkg="coms" type="net.py" output="screen">
             <param name="environment" value="sim" />
             <param name="ip" value="192.168.0.2" />
+        </node>
+    </group>
+    <group ns="/robot_3">
+        <node name="coms_net_3" pkg="coms" type="net.py" output="screen">
+            <param name="environment" value="sim" />
+            <param name="ip" value="192.168.0.3" />
+        </node>
+    </group>
+    <group ns="/robot_4">
+        <node name="coms_net_4" pkg="coms" type="net.py" output="screen">
+            <param name="environment" value="sim" />
+            <param name="ip" value="192.168.0.4" />
         </node>
     </group>
 </launch>

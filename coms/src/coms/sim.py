@@ -35,8 +35,8 @@ class Sim():
 
     def start(self: Sim) -> None:
         # Start simulated network
-        if self.NET_PROC is None and not is_sim_network_running(self.LOCAL_IPS):
-            self.NET_PROC = launch_sim_network(self.NET_SIM_LAUNCH_FILE, self.LOCAL_IPS)
+        # if self.NET_PROC is None and not is_sim_network_running(self.LOCAL_IPS):
+        #     self.NET_PROC = launch_sim_network(self.NET_SIM_LAUNCH_FILE, self.LOCAL_IPS)
         # Setup Pub/Sub topics
         self.register_ros_topics()
         # Launch listener and broadcaster threads
@@ -56,8 +56,8 @@ class Sim():
                 time.sleep(QUICK_WAIT_TIMER)
 
     def stop(self: Sim) -> None:
-        if self.NET_PROC is not None:
-            terminate_sim_network(self.NET_PROC, self.LOCAL_IPS)
+        # if self.NET_PROC is not None:
+        #     terminate_sim_network(self.NET_PROC, self.LOCAL_IPS)
         # Signal threads to terminate
         self.keep_runing.release()
         # Wait for all thredads to stop

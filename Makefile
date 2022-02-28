@@ -42,3 +42,18 @@ argos-demo:
 	$(SETUP); \
 	argos3 -c $(WORKDIR)/argos_bridge/argos_worlds/multi_robots.argos
 
+gazebo-demo:
+	$(SETUP); \
+	roslaunch turtlebot3_gazebo multi_turtlebot3_all.launch
+
+gazebo-net-sim:
+	$(SETUP); \
+	roslaunch example gazebo.launch
+
+argos-net-sim:
+	$(SETUP); \
+	roslaunch example argos.launch
+
+coms-net:
+	$(SETUP); \
+	roslaunch coms net.launch
