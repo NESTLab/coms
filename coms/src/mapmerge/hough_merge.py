@@ -65,7 +65,7 @@ def axis_spectrum(axis, map):
     spect = np.sum(edge_map, axis=axis)
     return spect / np.max(spect)
 
-def hough_mapmerge(map1, map2, num=7, robust=True, eps=0.5):
+def hough_mapmerge(map1, map2, num=9, robust=False, eps=2):
     """
     produces best possible accuracy merges given two maps
 
@@ -125,4 +125,4 @@ def hough_mapmerge(map1, map2, num=7, robust=True, eps=0.5):
             best_acpt = acpt
             best_map = cand_map
             
-    return best_map
+    return best_map, local_max

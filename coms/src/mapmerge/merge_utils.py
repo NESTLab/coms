@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 from mapmerge.constants import *
+from scipy import ndimage
 
 def load_mercer_map(txt_path, dtype=np.uint8):
     """
@@ -36,13 +37,43 @@ def pad_maps(map1, map2):
 
     return pad_map1, pad_map2
 
-def blur_map(map):
+def binarize_image(map):
+    """
+    0 where wall
+    1 elsewhere
+    """
+    binary_map = np.copy(map)
+    binary_map[binary_map == OCCUPIED] = 1
+    binary_map[binary_map != 1] = 0
+    binary_map = np.where(binary_map == 1, 0, 1)
+    return binary_map
+
+def distance_transform(map):
+    """
+    euclidean distance transform of map
+    """
+    dist = ndimage.distance_transform_edt(binarize_image(map))
+    dist /= dist.max()
+    dist = np.sqrt(dist)
+    dist = dist * 255
+    dist = dist.astype(np.uint8)
+    return dist
+
+def blur_map(map, ksize=3):
     """
     apply gaussian blur to map. can be useful for keypoint merge methods to remove noise.
     """
     src = np.copy(map)
-    blur = cv2.GaussianBlur(src, (3, 3), sigmaX=1, sigmaY=1)
+    blur = cv2.GaussianBlur(src, ksize=(ksize, ksize), sigmaX=1, sigmaY=1)
     return blur
+
+def median_filter(map, ksize=3):
+    """
+    median filter image
+    """
+    src = np.copy(map)
+    median = cv2.medianBlur(src, ksize=3)
+    return median
 
 def detect_fault(map1, map2, merged):
     """
