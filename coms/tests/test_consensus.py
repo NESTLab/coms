@@ -1,4 +1,9 @@
-import unittest
+"""
+
+NOTE: This is a future consensus test not yet ready to merge
+    Let the work below be a point of reference for testing
+
+
 import os
 import pathlib
 from mapmerge.constants import FREE, OCCUPIED, UNKNOWN
@@ -45,3 +50,5 @@ def generate_n_maps(n=4, map=INTEL_TEST_MAP):
 
 if __name__ == "__main__":
     generate_n_maps()
+
+"""
