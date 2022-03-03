@@ -26,23 +26,21 @@ def map_debugger(name):
             print(resp.map.info)
             parse_and_save(resp.map)
             # TODO extract map size info
-            # plt.imshow(map.reshape(-1, resp.map.info.width))
-            # plt.show()
+            plt.imshow(map.reshape(-1, resp.map.info.width))
+            plt.show()
             return
         except rospy.ServiceException as e:
             rospy.loginfo("service call failed: %s" % e)
         rate.sleep()
 
 
-def parse_and_save(msg, old_map):
+def parse_and_save(msg):
     """
     takes in an occupancy grid and saves it as an npy file
     """
     new_map = ros_to_numpy(msg.data).reshape(-1, msg.info.width)
     with open(f'map_{msg.header.seq}.npy', 'wb') as f:
         np.save(f, new_map)
-    with open(f'old_map{msg.header.seq}.npy', 'wb') as f:
-        np.save(f, old_map)
 
 
 def map_sub_debugger(name):

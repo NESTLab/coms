@@ -68,10 +68,11 @@ class MergeHandler:
 
 
         # breakpoint()
-        # MergeHandler.parse_and_save(msg, self.latest_map)
+        MergeHandler.parse_and_save(msg, self.latest_map)
         # unpack gmapping
         new_map = ros_to_numpy(msg.data).reshape(-1,msg.info.width)
         self.merge_map(new_map)
+        print("merge")
 
     @staticmethod
     def parse_and_save(msg, old_map):
@@ -79,10 +80,10 @@ class MergeHandler:
         takes in an occupancy grid and saves it as an npy file
         """
         new_map = ros_to_numpy(msg.data).reshape(-1, msg.info.width)
-        with open(f'map_{msg.header.seq}.npy', 'wb') as f:
-            np.save(f, new_map)
-        with open(f'old_map{msg.header.seq}.npy', 'wb') as f:
+        with open(f'test1/local{msg.header.seq}.npy', 'wb') as f:
             np.save(f, old_map)
+        with open(f'test1/foriegn{msg.header.seq}.npy', 'wb') as f:
+            np.save(f, new_map)
 
     # depreciated
     def merge_cb(self, req: MergeMapRequest) -> MergeMapResponse:
@@ -95,6 +96,11 @@ class MergeHandler:
         """
         name = req.robot_id
         new_map = self.get_map(name)
+
+        with open(f'local{1}.npy', 'wb') as f:
+            np.save(f, self.latest_map)
+        with open(f'other{1}.npy', 'wb') as f:
+            np.save(f, new_map)
         return self.merge_map(new_map)
 
     def merge_map(self, new_map: np.array([])) -> bool:
@@ -110,6 +116,7 @@ class MergeHandler:
         try:
             # print(new_map.shape)
             # print(self.latest_map.shape)
+
             self.latest_map = mapmerge_pipeline(new_map, self.latest_map)
             # TODO checks and maybe a lock? depends on the rospy callback threading
             # self.latest_map = merged

@@ -59,7 +59,8 @@ class TestMerge(unittest.TestCase):
         """
         ious = []
         for _ in range(num_trials):
-            map1, map2, map2_transform = recover_transformation(lambda m1, m2: hough_mapmerge(m1, m2, num=5, robust=True))
+            map1, map2, map2_transform = recover_transformation(lambda m1, m2: hough_mapmerge(m1, m2, num=5,
+                                                                                              robust=True))
             ious.append(acceptance_index(map1, map2_transform))
         self.assertGreaterEqual(np.mean(ious), target_iou)
 
