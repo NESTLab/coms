@@ -5,3 +5,4 @@
 [submodule "argos_bridge"]
 	path = argos_bridge
 	url = https://github.com/nikopoulospet/argos_bridge.git
+	branch = master
