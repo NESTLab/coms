@@ -33,3 +33,27 @@ install-deps:
 install-coms: install-deps; \
 	pip install -e $(WORKDIR)/coms
 
+install-argos-net-sim:
+	pip install -e $(WORKDIR)/ros-net-sim/network_coordinator
+
+install: install-coms install-argos-net-sim
+
+argos-demo:
+	$(SETUP); \
+	argos3 -c $(WORKDIR)/argos_bridge/argos_worlds/multi_robot_dan_maze.argos
+
+gazebo-demo:
+	$(SETUP); \
+	roslaunch turtlebot3_gazebo multi_turtlebot3_all.launch
+
+gazebo-net-sim:
+	$(SETUP); \
+	roslaunch example gazebo.launch
+
+argos-net-sim:
+	$(SETUP); \
+	roslaunch example argos.launch
+
+coms-net:
+	$(SETUP); \
+	roslaunch coms net.launch

@@ -13,7 +13,7 @@ from unittest.mock import patch, call
 TEST_DIR = pathlib.Path(__file__).parent.absolute()
 COMS_DIR = TEST_DIR.parent.absolute()
 PROJECT_BASE_DIR = COMS_DIR.parent.absolute()
-DEFAULT_NET_SIM_LAUNCH_FILE = os.path.join(PROJECT_BASE_DIR, "ros-net-sim/example/launch/gazebo.launch")
+DEFAULT_NET_SIM_LAUNCH_FILE = os.path.join(PROJECT_BASE_DIR, "ros-net-sim/example/launch/testing.launch")
 LAUNCH_CONFIG_LOCAL_IPS = ["192.168.0.1", "192.168.0.2", "192.168.0.3"]
 
 

@@ -22,7 +22,7 @@ class ThreadedTCPRequestHandler(BaseRequestHandler):
         elif m_type == 'Ping':
             m_struct = Ping()
         else:
-            print("Unrecognized message, dropping connection")
+            # print("Unrecognized message, dropping connection")
             return
 
         msg: Message = m_struct.consume_payload(raw_data)
@@ -36,7 +36,7 @@ class ThreadedTCPRequestHandler(BaseRequestHandler):
             msg.handle()
             request.sendall(b'Merge')
         else:
-            print("Unrecognized message, dropping connection")
+            # print("Unrecognized message, dropping connection")
             return
 
 
@@ -64,7 +64,6 @@ def send_messsage(nic: str, destination: Tuple[str, int], message: Message) -> N
             else:
                 raise Exception("Attempted to send unsupported message type")
             response = message.consume_payload(sock.recv(1024))
-            print("Received: {}".format(response))
             response.handle()
 
         except Exception as e:
