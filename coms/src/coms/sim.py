@@ -9,7 +9,7 @@ from subprocess import check_output, call
 from std_msgs.msg import String
 from coms.msg import nearby
 from msg.ping import Ping
-from coms.constants import QUICK_WAIT_TIMER, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, NET_CONFIG, SUB_TOPIC, PUB_TOPIC # noqa: E501
+from coms.constants import QUICK_WAIT_TIMER, RESPONSE_TIMEOUT, BROADCAST_INTERVAL, ENCODING, CATKIN_WS, SUB_TOPIC, PUB_TOPIC # noqa: E501
 from coms.utils import get_interface_from_ip, get_port_from, get_ip_list, get_device_numbers, addr_to_str
 from coms.server import server, send_messsage
 from concurrent.futures import ThreadPoolExecutor, Future
@@ -19,15 +19,15 @@ class Sim():
     LOCAL_IPS: List[str] = []                               # List of ip addresses defined in configuration file
     LISTEN_ADDRESS: Tuple[str, int] = ()                    # Address bound to the listener's TCP socket server
     NET_PROC: roslaunch.parent.ROSLaunchParent = None       # ROS specific launch object - for starting sim network
-    NET_SIM_LAUNCH_FILE: str = ""                           # Path to sim network launch file
+    NET_SIM_LAUNCH_FILE: str = None                           # Path to sim network launch file
     thread_executor: ThreadPoolExecutor = None              # Executor for managing threaded operations
     thread_tasks: List[Future] = []                         # List of Future objects for obtaining of thread stats
     keep_runing: Lock = None                                # Mutex for threads to determin if they should keep running
     pub: rospy.Publisher = None                             # ROS Publisher for sending msg responses to other nodes
     sub: rospy.Subscriber = None                            # ROS Subscriber for listening to message requests
 
-    def __init__(self: Sim, address: str, net_sim_launch_file: str) -> None:
-        path_to_config = check_output("find {0} -type f -name '{1}'".format(CATKIN_WS, NET_CONFIG), shell=True)
+    def __init__(self: Sim, address: str, net_sim_launch_file: str = None, net_config: str = "testing.yaml") -> None:
+        path_to_config = check_output("find {0} -type f -name '{1}'".format(CATKIN_WS, net_config), shell=True)
         self.LOCAL_IPS = get_ip_list(path_to_config.decode(ENCODING).strip())
         self.NET_SIM_LAUNCH_FILE = net_sim_launch_file
         self.LISTEN_ADDRESS = (address, get_port_from(address, True))
@@ -35,8 +35,8 @@ class Sim():
 
     def start(self: Sim) -> None:
         # Start simulated network
-        # if self.NET_PROC is None and not is_sim_network_running(self.LOCAL_IPS):
-        #     self.NET_PROC = launch_sim_network(self.NET_SIM_LAUNCH_FILE, self.LOCAL_IPS)
+        if self.NET_SIM_LAUNCH_FILE is not None and self.NET_PROC is None and not is_sim_network_running(self.LOCAL_IPS):
+            self.NET_PROC = launch_sim_network(self.NET_SIM_LAUNCH_FILE, self.LOCAL_IPS)
         # Setup Pub/Sub topics
         self.register_ros_topics()
         # Launch listener and broadcaster threads
@@ -56,8 +56,8 @@ class Sim():
                 time.sleep(QUICK_WAIT_TIMER)
 
     def stop(self: Sim) -> None:
-        # if self.NET_PROC is not None:
-        #     terminate_sim_network(self.NET_PROC, self.LOCAL_IPS)
+        if self.NET_SIM_LAUNCH_FILE is not None and self.NET_PROC is not None:
+            terminate_sim_network(self.NET_PROC, self.LOCAL_IPS)
         # Signal threads to terminate
         self.keep_runing.release()
         # Wait for all thredads to stop
@@ -133,7 +133,7 @@ class Sim():
         if self.sub is not None:
             self.sub.unregister()
 
-    def listen_handler(self: Sim, msg: any, cb_args: any) -> None:
+    def listen_handler(self: Sim, msg: rospy.AnyMsg, cb_args: any) -> None:
         rospy.loginfo("GOT MESSAGE")
         print('got -> ', msg.data)
 

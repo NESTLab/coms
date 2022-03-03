@@ -4,7 +4,7 @@ import rospy
 from typing import List
 from subprocess import check_output, call
 from coms.utils import readable, writable, get_ip_list, get_interface_from_ip, get_device_numbers, gen_bound_socket, start_roscore, stop_roscore, addr_to_str # noqa: E501
-from coms.constants import CATKIN_WS, ENCODING, NET_CONFIG
+from coms.constants import CATKIN_WS, ENCODING
 from roslaunch.parent import ROSLaunchParent
 
 
@@ -33,7 +33,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(writable(sock), False, msg="Closed socket found to be writable")
 
     def test_get_ip_list(self: unittest.TestCase) -> None:
-        path_to_config = check_output("find {0} -type f -name '{1}'".format(CATKIN_WS, NET_CONFIG), shell=True)
+        path_to_config = check_output("find {0} -type f -name '{1}'".format(CATKIN_WS, "testing.yaml"), shell=True)
         local_ips = get_ip_list(path_to_config.decode(ENCODING).strip())
         self.assertEqual(local_ips, ["192.168.0.1", "192.168.0.2", "192.168.0.3"])
 
