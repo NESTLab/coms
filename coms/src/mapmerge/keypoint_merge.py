@@ -1,18 +1,14 @@
+# TODO @cjmclaughlin further exception handling and fault detection (through sampling/ensemble method)
 import numpy as np
 import cv2
 from mapmerge.constants import *
 
-from mapmerge.merge_utils import apply_warp
-
-
-def blur_map(map):
-    src = np.copy(map)
-    blur = cv2.GaussianBlur(src, (3, 3), sigmaX=1, sigmaY=1)
-    return blur
+from mapmerge.merge_utils import blur_map, apply_warp, pad_maps
 
 
 def sift_mapmerge(map1, map2):
-    map1, map2 = blur_map(map1), blur_map(map2)
+    # map1, map2 = blur_map(map1), blur_map(map2)
+    map1, map2 = pad_maps(map1, map2)
     sift = cv2.SIFT_create()
     kp1, desc1 = sift.detectAndCompute(map1, None)
     kp2, desc2 = sift.detectAndCompute(map2, None)
@@ -38,6 +34,7 @@ def sift_mapmerge(map1, map2):
 
 def orb_mapmerge(map1, map2):
     # map1, map2 = blur_map(map1), blur_map(map2)
+    map1, map2 = pad_maps(map1, map2)    
     orb = cv2.ORB_create(nfeatures=1000)
     kp1, desc1 = orb.detectAndCompute(map1, None)
     kp2, desc2 = orb.detectAndCompute(map2, None)
