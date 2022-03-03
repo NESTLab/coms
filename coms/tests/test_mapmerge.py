@@ -16,8 +16,9 @@ TEST_DIR = pathlib.Path(__file__).parent.absolute()
 PATH_TO_INTEL_TEST_MAP = os.path.join(TEST_DIR, 'test_data', 'intel.txt')
 INTEL_TEST_MAP = load_mercer_map(PATH_TO_INTEL_TEST_MAP)
 
+GMAPPING_SMALL = np.load(os.path.join(TEST_DIR, 'test_data', f'gmapping/foriegn1.npy'))
 
-def recover_transformation(merge_fn):
+def recover_transformation(merge_fn, map=INTEL_TEST_MAP):
     """
     Apply Rotation+Translation to Random Map and Recover Original
 
@@ -26,32 +27,34 @@ def recover_transformation(merge_fn):
 
     output: map1, map2, map2'
     """
-    map1 = INTEL_TEST_MAP  # original map
-    map2, _ = augment_map(INTEL_TEST_MAP, shift_limit=0.05, rotate_limit=360)  # augmented map
+    map1 = map  # original map
+    map2, _ = augment_map(map, shift_limit=0.05, rotate_limit=360)  # augmented map
     map2_transform = merge_fn(map1, map2)  # recovered map
     return map1, map2, map2_transform
 
 
 class TestMerge(unittest.TestCase):
-    def test_sift_merge(self: unittest, num_trials: int = 25, target_iou: float = 0.95) -> None:
+    def test_sift_merge(self: unittest, num_trials: int = 50, target_iou: float = 0.9) -> None:
         """
-        SIFT merge IoU should be > 0.95 for all transformations
+        SIFT merge IoU should be > 0.9 for all transformations
         """
         ious = []
         for _ in range(num_trials):
             map1, map2, map2_transform = recover_transformation(sift_mapmerge)
             ious.append(acceptance_index(map1, map2_transform))
         self.assertGreaterEqual(np.mean(ious), target_iou)
+        self.assertTrue(not np.alltrue(map2_transform == UNKNOWN))
 
-    def test_orb_merge(self: unittest, num_trials: int = 25, target_iou: float = 0.95) -> None:
+    def test_orb_merge(self: unittest, num_trials: int = 50, target_iou: float = 0.9) -> None:
         """
-        ORB merge IoU should be > 0.95 for all transformations
+        ORB merge IoU should be > 0.9 for all transformations
         """
         ious = []
         for _ in range(num_trials):
             map1, map2, map2_transform = recover_transformation(orb_mapmerge)
             ious.append(acceptance_index(map1, map2_transform))
         self.assertGreaterEqual(np.mean(ious), target_iou)
+        self.assertTrue(not np.alltrue(map2_transform == UNKNOWN))
 
     def test_hough_merge(self: unittest, num_trials: int = 25, target_iou: float = 0.8) -> None:
         """
@@ -59,9 +62,9 @@ class TestMerge(unittest.TestCase):
         """
         ious = []
         for _ in range(num_trials):
-            map1, map2, map2_transform = recover_transformation(lambda m1, m2: hough_mapmerge(m1, m2, num=5,
-                                                                                              robust=True))
+            map1, map2, map2_transform = recover_transformation(lambda m1, m2: hough_mapmerge(m1, m2, num=8, robust=True))
             ious.append(acceptance_index(map1, map2_transform))
+        print("Mean IOU", np.mean(ious))
         self.assertGreaterEqual(np.mean(ious), target_iou)
 
     def test_merge_padding(self: unittest) -> None:
@@ -113,10 +116,10 @@ class TestMerge(unittest.TestCase):
 
         # TODO @cjmclaughlin install further integration tests if initial simulation deems it necessary
 
-    def test_simulation_merge(self: unittest) -> None:
-        """
-        Test merge using initial data from simulation
-        """
+    # def test_simulation_merge(self: unittest) -> None:
+    #     """
+    #     Test merge using initial data from simulation
+    #     """
        
 
         # old_maps = [ os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy') for i in range(9) ]
@@ -161,22 +164,36 @@ if __name__ == '__main__':
     #     prev_map = temp_map
     #     plt.show()
     
-    fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(12, 8))
+    # fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(12, 8))
+    # full = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'full_map.pgm'))
+    # map1 = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'map_part1.pgm'))
+    # map2 = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'map_part2.pgm'))
+    # axes[0].imshow(map1, cmap="gray")
+    # axes[0].set_title("map1")
+    # axes[1].imshow(map2, cmap="gray")
+    # axes[1].set_title("map2")
+
+    # hough_merge = mapmerge_pipeline(map1, map2, method="hough")
+    # axes[2].imshow(hough_merge, cmap="gray")
+    # axes[2].set_title("map merge")
+    # axes[3].imshow(full, cmap="gray")
+    # axes[3].set_title("target (full) map")
+    # plt.show()
+
+    # original = np.load(os.path.join(TEST_DIR, 'test_data', f'gmapping/foriegn1.npy'))
+    # foreign = np.load(os.path.join(TEST_DIR, 'test_data', f'gmapping/local2.npy'))
+
+    # print(original.shape)
+    # print(foreign.shape)
+
+    # fig, axes = plt.subplots(1, 3)
+    # axes[0].imshow(original, cmap="gray")
+    # axes[1].imshow(foreign, cmap="gray")
     
-    full = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'full_map.pgm'))
-    map1 = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'map_part1.pgm'))
-    map2 = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'map_part2.pgm'))
-    axes[0].imshow(map1, cmap="gray")
-    axes[0].set_title("map1")
-    axes[1].imshow(map2, cmap="gray")
-    axes[1].set_title("map2")
-
-    hough_merge = mapmerge_pipeline(map1, map2, method="hough")
-    axes[2].imshow(hough_merge, cmap="gray")
-    axes[2].set_title("map merge")
-    axes[3].imshow(full, cmap="gray")
-    axes[3].set_title("target (full) map")
-    plt.show()
+    # merge = mapmerge_pipeline(original, foreign, method="hough")
+    # axes[2].imshow(merge, cmap="gray")
+    # plt.show()
+        
 
 
-    # unittest.main()
+    unittest.main()
