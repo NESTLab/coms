@@ -188,23 +188,28 @@ class TestSim(unittest.TestCase):
         rospy.init_node("some_node")
 
         mocked_handler = Mock()
-        sim = Sim(LAUNCH_CONFIG_LOCAL_IPS[0], DEFAULT_NET_SIM_LAUNCH_FILE)
+        namespace = "/robot_11/"
+        sim = Sim(
+            address=LAUNCH_CONFIG_LOCAL_IPS[0],
+            net_sim_launch_file=DEFAULT_NET_SIM_LAUNCH_FILE,
+            namespace=namespace)
         sim.listen_handler = mocked_handler
         sim.register_ros_topics()
         self.assertNotEqual(sim.sub, None)
         self.assertNotEqual(sim.pub, None)
-        pub = rospy.Publisher(name=SUB_TOPIC, data_class=String, queue_size=10)
+        pub = rospy.Publisher(name=namespace + SUB_TOPIC, data_class=String, queue_size=10)
         # NOTE: Publisher topics are created in a new thread. Allow this thread to start
         time.sleep(1)
         pub.publish(String('foo'))
         pub.publish(String('bar'))
         pub.publish(String('baz'))
-        topics = rospy.get_published_topics("/")
+        topics = rospy.get_published_topics(namespace=namespace)
         sim.unregister_ros_topics()
         stop_roscore(p)
         # Enusre topic was present
+        print("we want to get the good stuff")
 
-        pub_topic = [PUB_TOPIC, 'coms/nearby']
+        pub_topic = [namespace + PUB_TOPIC, 'coms/nearby']
         print(topics)
         self.assertEqual(pub_topic in topics, True, "Sim not publishing ROS topic")
         self.assertEqual(mocked_handler.call_count, 3)
