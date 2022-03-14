@@ -19,19 +19,21 @@ class Sim():
     LOCAL_IPS: List[str] = []                               # List of ip addresses defined in configuration file
     LISTEN_ADDRESS: Tuple[str, int] = ()                    # Address bound to the listener's TCP socket server
     NET_PROC: roslaunch.parent.ROSLaunchParent = None       # ROS specific launch object - for starting sim network
-    NET_SIM_LAUNCH_FILE: str = None                           # Path to sim network launch file
+    NET_SIM_LAUNCH_FILE: str = None                         # Path to sim network launch file
     thread_executor: ThreadPoolExecutor = None              # Executor for managing threaded operations
     thread_tasks: List[Future] = []                         # List of Future objects for obtaining of thread stats
     keep_runing: Lock = None                                # Mutex for threads to determin if they should keep running
     pub: rospy.Publisher = None                             # ROS Publisher for sending msg responses to other nodes
     sub: rospy.Subscriber = None                            # ROS Subscriber for listening to message requests
+    namespace: str = ""                                     # Robot namespace for use in publishing robot specific topics
 
-    def __init__(self: Sim, address: str, net_sim_launch_file: str = None, net_config: str = "testing.yaml") -> None:
+    def __init__(self: Sim, address: str, net_sim_launch_file: str = None, net_config: str = "testing.yaml", namespace: str = "/robot_X/") -> None:
         path_to_config = check_output("find {0} -type f -name '{1}'".format(CATKIN_WS, net_config), shell=True)
         self.LOCAL_IPS = get_ip_list(path_to_config.decode(ENCODING).strip())
         self.NET_SIM_LAUNCH_FILE = net_sim_launch_file
         self.LISTEN_ADDRESS = (address, get_port_from(address, True))
         self.keep_runing = Lock()
+        self.namespace = namespace
 
     def start(self: Sim) -> None:
         # Start simulated network
@@ -114,7 +116,7 @@ class Sim():
 
     def register_ros_topics(self: Sim) -> None:
         self.pub = rospy.Publisher(
-            name=PUB_TOPIC,
+            name=self.namespace + PUB_TOPIC,
             data_class=nearby,
             queue_size=10)
 
@@ -123,7 +125,7 @@ class Sim():
         # This forces us to use a lambda function to ignore the 'self'
         # source: http://docs.ros.org/en/melodic/api/rospy/html/rospy.topics.Subscriber-class.html
         self.sub = rospy.Subscriber(
-            name=SUB_TOPIC,
+            name=self.namespace + SUB_TOPIC,
             data_class=String,
             callback=lambda msg: self.listen_handler(msg, cb_args=None))
 

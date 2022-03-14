@@ -104,7 +104,8 @@ def main() -> None:
     simulation = Sim(
         address=args["NODE_IP"],
         net_sim_launch_file=args["LAUNCH_FILE"],
-        net_config=args["CONFIG_FILE"]
+        net_config=args["CONFIG_FILE"],
+        namespace=args["NODE_NAMESPACE"]
     )
 
     def exit_handler(signal_received: signal.Signals, frame: any) -> None:
