@@ -1,4 +1,0 @@
-[submodule "argos_bridge"]
-	path = argos_bridge
-	url = https://github.com/NESTLab/argos_bridge.git
-	branch = master
