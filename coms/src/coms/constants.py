@@ -8,5 +8,5 @@ LISTENER_PORT_PREFIX = 8222
 BROADCASTER_PORT_PREFIX = 8111
 STATIC_LISTENER_PORT = 8877
 QUICK_WAIT_TIMER = 0.05
-PUB_TOPIC = '/nearby_robots'
-SUB_TOPIC = '/coms_listening'
+PUB_TOPIC = 'nearby_robots'
+SUB_TOPIC = 'coms_listening'
