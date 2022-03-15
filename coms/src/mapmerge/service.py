@@ -35,6 +35,6 @@ def mapmerge_pipeline(map1, map2, method="hough", scale_fix=False):
             merges.append(merged_map)
         return merges[np.argmax(ious)]
     else:
-        transformed_map2 = merge_fn(map1, map2)
+        transformed_map2, local_max = merge_fn(map1, map2)
         merged_map = combine_aligned_maps(transformed_map2, map1)
         return merged_map

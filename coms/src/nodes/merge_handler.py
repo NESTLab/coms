@@ -80,9 +80,10 @@ class MergeHandler:
         takes in an occupancy grid and saves it as an npy file
         """
         new_map = ros_to_numpy(msg.data).reshape(-1, msg.info.width)
-        with open(f'test1/local{msg.header.seq}.npy', 'wb') as f:
+        # create this directory if you don't already have
+        with open(f'/root/catkin_ws/src/coms/coms/test1/local{msg.header.seq}.npy', 'wb') as f:
             np.save(f, old_map)
-        with open(f'test1/foriegn{msg.header.seq}.npy', 'wb') as f:
+        with open(f'/root/catkin_ws/src/coms/coms/test1/foriegn{msg.header.seq}.npy', 'wb') as f:
             np.save(f, new_map)
 
     # depreciated
