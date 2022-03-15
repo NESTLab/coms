@@ -1,7 +1,3 @@
-[submodule "ros-net-sim"]
-	path = ros-net-sim
-	url = https://github.com/NESTLab/ros-net-sim.git
-	branch = main
 [submodule "argos_bridge"]
 	path = argos_bridge
 	url = https://github.com/NESTLab/argos_bridge.git
