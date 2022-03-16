@@ -66,3 +66,4 @@ CATKIN_IGNORE
 
 # Coveralls
 .coverage
+*.npy

@@ -15,6 +15,7 @@ def ros_to_numpy(array):
     """
     returns a int8 array from numpy
     """
+    array = np.array(array)
     array[array == -1] = UNKNOWN
     array = np.asarray(array, dtype=np.uint8)
     array[array == 100] = FREE

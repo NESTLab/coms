@@ -65,16 +65,18 @@ def axis_spectrum(axis, map):
     spect = np.sum(edge_map, axis=axis)
     return spect / np.max(spect)
 
-def hough_mapmerge(map1, map2, num=4, robust=False, eps=3):
+def hough_mapmerge(map1, map2, num=9, robust=False, eps=2):
     """
     produces best possible accuracy merges given two maps
 
     Inputs:
-        num: number of hypothesis to test (default: 4 as in paper)
+        num: number of hypothesis to test
         robust: whether or not to generate 2 extra hypotheses for each primary candidate
         eps: value used to generate additional hypothesis in robust mode, (candidate +/- eps)
              quick experiments show that eps between 2 and 5 may be good
     """
+    print("++++++++++++++++++++++++++++++++++")
+    print(num, eps)
     x, y = map1.shape[0], map1.shape[1]
     center = y/2, x/2
     best_map = None
@@ -94,6 +96,8 @@ def hough_mapmerge(map1, map2, num=4, robust=False, eps=3):
             robust_max.append(r)
             robust_max.append(r+eps)
             robust_max.append(r-eps)
+            robust_max.append(r + 2*eps)
+            robust_max.append(r - 2*eps)
         local_max = robust_max
     
     SX_M1 = axis_spectrum(0, map1)
@@ -123,4 +127,4 @@ def hough_mapmerge(map1, map2, num=4, robust=False, eps=3):
             best_acpt = acpt
             best_map = cand_map
             
-    return best_map
+    return best_map, local_max
