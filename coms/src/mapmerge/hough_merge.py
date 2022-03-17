@@ -3,7 +3,7 @@ from skimage.transform import hough_line, hough_line_peaks
 import matplotlib.pyplot as plt
 import scipy
 import cv2
-from mapmerge.merge_utils import apply_warp, acceptance_index
+from mapmerge.merge_utils import apply_warp, acceptance_index, median_filter
 
 from mapmerge.constants import *
 
@@ -79,7 +79,7 @@ def hough_mapmerge(map1, map2, num=11, robust=True, eps=2):
     center = y/2, x/2
     best_map = None
     best_acpt = -1
-    best_params = None
+    best_M = np.empty(shape=(2,3))
 
     HS_M1 = hough_spectrum_calculation(map1)
     HS_M2 = hough_spectrum_calculation(map2)
@@ -124,5 +124,7 @@ def hough_mapmerge(map1, map2, num=11, robust=True, eps=2):
         if acpt > best_acpt:
             best_acpt = acpt
             best_map = cand_map
+            best_M[:,:2] = M_rotation[:,:2]
+            best_M[:,2] = M_translation[:,2]
             
-    return best_map # , local_max
+    return best_map, best_M # , local_max

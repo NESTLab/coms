@@ -1,11 +1,12 @@
+from statistics import median
 from mapmerge.hough_merge import hough_mapmerge
-from mapmerge.merge_utils import pad_maps
+from mapmerge.merge_utils import apply_warp, pad_maps, median_filter
 import numpy as np
 from mapmerge.keypoint_merge import sift_mapmerge, orb_mapmerge
 from mapmerge.merge_utils import resize_map, combine_aligned_maps, acceptance_index
 
 
-def mapmerge_pipeline(map1, map2, method="hough", scale_fix=False):
+def mapmerge_pipeline(map1, map2, method="hough", scale_process=False, median_process=True):
     """
     end-to-end map merge pipeline for testing
     
@@ -23,18 +24,25 @@ def mapmerge_pipeline(map1, map2, method="hough", scale_fix=False):
     else:
         merge_fn = hough_mapmerge
     map1, map2 = pad_maps(map1, map2)
-    if scale_fix:
-        for scale in [0.95, 0.975, 1, 1.025, 1.05]:
-            ious = []
-            merges = []
+    if scale_process:
+        ious = []
+        merges = []
+        for scale in [0.5, 0.75, 1, 1.25, 2.0]:
+            map1_scale = resize_map(map1, dsize=(int(map1.shape[0] * scale), int(map1.shape[1] * scale)))
             map2_scale = resize_map(map2, dsize=(int(map2.shape[0] * scale), int(map2.shape[1] * scale)))
-            transformed_map2 = merge_fn(map1, map2_scale)
-            transformed_map2 = resize_map(transformed_map2, dsize=map2.shape)
+            if median_process:
+                map1_scale = median_filter(map1_scale)
+                map2_scale = median_filter(map2_scale)
+            _, M_scale = merge_fn(map1_scale, map2_scale)
+            # use M from scale process on original maps
+            transformed_map2 = apply_warp(map2, M_scale)
             merged_map = combine_aligned_maps(transformed_map2, map1)
             ious.append(acceptance_index(map1, merged_map))
             merges.append(merged_map)
         return merges[np.argmax(ious)]
     else:
-        transformed_map2, local_max = merge_fn(map1, map2)
+        if median_process:
+            map1, map2 = median_filter(map1), median_filter(map2)
+        transformed_map2, M = merge_fn(map1, map2)
         merged_map = combine_aligned_maps(transformed_map2, map1)
         return merged_map
