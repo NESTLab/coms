@@ -3,9 +3,9 @@ import os
 import pathlib
 from mapmerge.constants import FREE, OCCUPIED, UNKNOWN
 from mapmerge.merge_utils import augment_map, combine_aligned_maps, detect_fault, load_mercer_map, acceptance_index, pad_maps, resize_map
-from mapmerge.service import mapmerge_pipeline
 from mapmerge.keypoint_merge import sift_mapmerge, orb_mapmerge
 from mapmerge.hough_merge import hough_mapmerge
+from mapmerge.service import mapmerge_pipeline
 from mapmerge.ros_utils import pgm_to_numpy
 import numpy as np
 
@@ -15,59 +15,91 @@ TEST_DIR = pathlib.Path(__file__).parent.absolute()
 # load 'difficult' map with curved walls and intricate details
 PATH_TO_INTEL_TEST_MAP = os.path.join(TEST_DIR, 'test_data', 'intel.txt')
 INTEL_TEST_MAP = load_mercer_map(PATH_TO_INTEL_TEST_MAP)
-
 GMAPPING_SMALL = np.load(os.path.join(TEST_DIR, 'test_data', f'gmapping/foriegn1.npy'))
 
-def recover_transformation(merge_fn, map=INTEL_TEST_MAP):
+# PARAMETERS FOR TESTING - CAN LOWER NUM_TRIALS FOR FASTER CI
+NUM_TRIALS = 20
+TEST_ANGLES = np.linspace(start=5, stop=180, num=NUM_TRIALS)
+
+def recover_transformation(method="hough", map=INTEL_TEST_MAP, fixed_angle=None, scale_process=False):
     """
     Apply Rotation+Translation to Random Map and Recover Original
 
     merge_fn: function with signature (map1: ndarray, map2: ndarray) --> map2_transform
         -- i.e. a function that finds a transformation from map2 onto map 1
+    map: numpy map to perform tests on
+    fixed angle: float indicating the angle of rotation for augmentation. if None, this is selected randomly.
+    scale_process: boolean indicating if multi-scale merge should be performed
 
-    output: map1, map2, map2'
+    output: map1, map2, map2' (map2 transformed to be in line with map1)
     """
     map1 = map  # original map
-    map2, _ = augment_map(map, shift_limit=0.05, rotate_limit=360)  # augmented map
-    map2_transform = merge_fn(map1, map2)  # recovered map
+    map2, _ = augment_map(map, shift_limit=0.03, rotate_limit=360, fixed_angle=fixed_angle, fixed_dx=0.03, fixed_dy=0.03)  # augmented map
+    map2_transform = mapmerge_pipeline(map1, map2, method=method, scale_process=scale_process)  # recovered map
     return map1, map2, map2_transform
 
-
 class TestMerge(unittest.TestCase):
-    def test_sift_merge(self: unittest, num_trials: int = 50, target_iou: float = 0.9) -> None:
+    def test_sift_merge(self: unittest, target_iou: float = 0.9) -> None:
         """
         SIFT merge IoU should be > 0.9 for all transformations
         """
         ious = []
-        for _ in range(num_trials):
-            map1, map2, map2_transform = recover_transformation(sift_mapmerge)
+        for i in range(NUM_TRIALS):
+            map1, map2, map2_transform = recover_transformation(method="sift", fixed_angle=TEST_ANGLES[i])
             ious.append(acceptance_index(map1, map2_transform))
         print("SIFT MIOU", np.mean(ious))
         self.assertGreaterEqual(np.mean(ious), target_iou)
         self.assertTrue(not np.alltrue(map2_transform == UNKNOWN))
 
-    def test_orb_merge(self: unittest, num_trials: int = 50, target_iou: float = 0.9) -> None:
+    def test_orb_merge(self: unittest, target_iou: float = 0.9) -> None:
         """
         ORB merge IoU should be > 0.9 for all transformations
         """
         ious = []
-        for _ in range(num_trials):
-            map1, map2, map2_transform = recover_transformation(orb_mapmerge)
+        for i in range(NUM_TRIALS):
+            map1, map2, map2_transform = recover_transformation(method="orb", fixed_angle=TEST_ANGLES[i])
             ious.append(acceptance_index(map1, map2_transform))
         print("ORB MIOU", np.mean(ious))
         self.assertGreaterEqual(np.mean(ious), target_iou)
         self.assertTrue(not np.alltrue(map2_transform == UNKNOWN))
 
-    def test_hough_merge(self: unittest, num_trials: int = 25, target_iou: float = 0.8) -> None:
+    def test_hough_merge(self: unittest, target_iou: float = 0.9) -> None:
         """
-        Hough merge IoU should be > 0.8 for all transformations
+        Hough merge IoU should be > 0.9 for all transformations
         """
         ious = []
-        for _ in range(num_trials):
-            map1, map2, map2_transform = recover_transformation(lambda m1, m2: hough_mapmerge(m1, m2, num=11, robust=True))
+        for i in range(NUM_TRIALS):
+            map1, map2, map2_transform = recover_transformation(method="hough", fixed_angle=TEST_ANGLES[i])
             ious.append(acceptance_index(map1, map2_transform))
         print("Hough MIOU", np.mean(ious))
         self.assertGreaterEqual(np.mean(ious), target_iou)
+
+    def test_pipeline_scale_process(self: unittest) -> None:
+        """
+        test scale-process for merge pipeline
+        """
+        # first with hough
+        noscale_ious = []
+        for i in range(NUM_TRIALS):
+            map1, map2, map2_transform = recover_transformation(method="hough", fixed_angle=TEST_ANGLES[i])
+            noscale_ious.append(acceptance_index(map1, map2_transform))
+        scale_ious = []
+        for i in range(NUM_TRIALS):
+            map1, map2, map2_transform = recover_transformation(method="hough", fixed_angle=TEST_ANGLES[i], scale_process=True)
+            scale_ious.append(acceptance_index(map1, map2_transform))
+        print(f"Hough IoU: {np.mean(noscale_ious)}, Hough+Scale IoU: {np.mean(scale_ious)}")
+        self.assertGreaterEqual(np.mean(scale_ious), np.mean(noscale_ious))
+        # try KP method as well
+        noscale_ious = []
+        for i in range(NUM_TRIALS):
+            map1, map2, map2_transform = recover_transformation(method="orb", fixed_angle=TEST_ANGLES[i])
+            noscale_ious.append(acceptance_index(map1, map2_transform))
+        scale_ious = []
+        for i in range(NUM_TRIALS):
+            map1, map2, map2_transform = recover_transformation(method="orb", fixed_angle=TEST_ANGLES[i], scale_process=True)
+            scale_ious.append(acceptance_index(map1, map2_transform))
+        print(f"KP IoU: {np.mean(noscale_ious)}, KP+Scale IoU: {np.mean(scale_ious)}")
+        self.assertGreaterEqual(np.mean(scale_ious), np.mean(noscale_ious))
 
     def test_merge_padding(self: unittest) -> None:
         """
@@ -122,8 +154,6 @@ class TestMerge(unittest.TestCase):
     #     """
     #     Test merge using initial data from simulation
     #     """
-       
-
         # old_maps = [ os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy') for i in range(9) ]
         # maps = [ os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy') for i in range(9) ]
 
@@ -136,66 +166,5 @@ class TestMerge(unittest.TestCase):
         #     axes[2].imshow(merge)
         #     plt.show()
 
-
-
-import matplotlib.pyplot as plt
-
 if __name__ == '__main__':
-    
-    # plt.imshow(np.load(os.path.join(TEST_DIR, 'test_data', f'old_map1.npy')))
-    # plt.show()
-    # fig, axes = plt.subplots(nrows=2, ncols=9, figsize=(12, 10))
-    # for i in range(9):
-    #     origin_map, foreign_map = np.load(os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy')), np.load(os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy'))
-    #     axes[0][i].imshow(origin_map, cmap="gray")
-    #     axes[0][i].set_title("old")
-    #     axes[1][i].imshow(foreign_map, cmap="gray")
-    #     axes[1][i].set_title("not old")
-    # plt.show()
-
-    # old_maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'old_map{i}.npy')) for i in range(9) ]
-    # maps = [ np.load(os.path.join(TEST_DIR, 'test_data', f'map_{i}.npy')) for i in range(9) ]
-
-    # prev_map = maps[0]
-    # for i in range(30):
-    #     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(8,6))
-    #     temp_map = mapmerge_pipeline(maps[0], prev_map)
-    #     axes[0].imshow(maps[0])
-    #     axes[1].imshow(temp_map)
-    #     axes[2].imshow(prev_map)
-    #     prev_map = temp_map
-    #     plt.show()
-    
-    # fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(12, 8))
-    # full = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'full_map.pgm'))
-    # map1 = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'map_part1.pgm'))
-    # map2 = pgm_to_numpy(os.path.join(TEST_DIR, 'test_data', f'map_part2.pgm'))
-    # axes[0].imshow(map1, cmap="gray")
-    # axes[0].set_title("map1")
-    # axes[1].imshow(map2, cmap="gray")
-    # axes[1].set_title("map2")
-
-    # hough_merge = mapmerge_pipeline(map1, map2, method="hough")
-    # axes[2].imshow(hough_merge, cmap="gray")
-    # axes[2].set_title("map merge")
-    # axes[3].imshow(full, cmap="gray")
-    # axes[3].set_title("target (full) map")
-    # plt.show()
-
-    # original = np.load(os.path.join(TEST_DIR, 'test_data', f'gmapping/foriegn1.npy'))
-    # foreign = np.load(os.path.join(TEST_DIR, 'test_data', f'gmapping/local2.npy'))
-
-    # print(original.shape)
-    # print(foreign.shape)
-
-    # fig, axes = plt.subplots(1, 3)
-    # axes[0].imshow(original, cmap="gray")
-    # axes[1].imshow(foreign, cmap="gray")
-    
-    # merge = mapmerge_pipeline(original, foreign, method="hough")
-    # axes[2].imshow(merge, cmap="gray")
-    # plt.show()
-        
-
-
     unittest.main()

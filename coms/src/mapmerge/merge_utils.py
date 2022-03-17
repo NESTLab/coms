@@ -72,7 +72,7 @@ def median_filter(map, ksize=3):
     median filter image
     """
     src = np.copy(map)
-    median = cv2.medianBlur(src, ksize=3)
+    median = cv2.medianBlur(src, ksize=ksize)
     return median
 
 def detect_fault(map1, map2, merged):
@@ -106,30 +106,25 @@ def detect_fault(map1, map2, merged):
 
     return True  # passed all checks
 
-def augment_map(map, shift_limit=0.1, rotate_limit=360, fill=UNKNOWN, scale_noise=False):
+def augment_map(map, shift_limit=0.1, rotate_limit=360, fill=UNKNOWN, fixed_angle=None, fixed_dx=None, fixed_dy=None):
     """
     apply set of random image augmentation to map image
     return augmented map, as well as parameters for augmentation
     """
     x, y = map.shape[0], map.shape[1]
     center = y/2, x/2
-    angle = np.random.uniform(low=-rotate_limit, high=rotate_limit)
-    # angle = 45  # hard code for consistency
+    angle = np.random.uniform(low=-rotate_limit, high=rotate_limit) if fixed_angle is None else fixed_angle
     M_rotation = cv2.getRotationMatrix2D(center=center, angle=angle, scale=1.0)
     rotated_map = apply_warp(map, M_rotation, fill=fill)
     shift_prop_x = np.random.uniform(low=-shift_limit, high=shift_limit)
-    translation_x = shift_prop_x * x
+    translation_x = shift_prop_x * x if fixed_dx is None else fixed_dx
     shift_prop_y = np.random.uniform(low=-shift_limit, high=shift_limit)
-    translation_y = shift_prop_y * y
+    translation_y = shift_prop_y * y if fixed_dy is None else fixed_dy
     M_translation = np.float32([
         [1, 0, translation_x],
         [0, 1, translation_y]
     ])
     augmented_map = apply_warp(rotated_map, M_translation, fill=fill)
-    if scale_noise:
-        augmented_map = cv2.resize(augmented_map, dsize=(map.shape[1]*2, map.shape[0]*2), interpolation=cv2.INTER_NEAREST)
-        augmented_map = cv2.medianBlur(augmented_map, ksize=3)
-        augmented_map = cv2.resize(augmented_map, dsize=(map.shape[1], map.shape[0]), interpolation=cv2.INTER_NEAREST)
     augment_dict = {"translation_x":translation_x, "translation_y":translation_y, "angle":angle}
     return augmented_map, augment_dict
 

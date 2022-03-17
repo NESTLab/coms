@@ -27,14 +27,12 @@ def sift_mapmerge(map1, map2, transform=False):
         dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
         M, mask = cv2.estimateAffine2D(dst_pts, src_pts, confidence=0.999, ransacReprojThreshold=5.0, refineIters=30)
-        return apply_warp(map2, M)
+        return apply_warp(map2, M), M
     except:
         # failed merge
         print("MERGE FAILED: Returning Original Map")
         return np.ones_like(map2, dtype=np.uint8) * UNKNOWN
 
-
-import matplotlib.pyplot as plt
 def orb_mapmerge(map1, map2, transform=False):
     map1, map2 = pad_maps(map1, map2)
     try:
@@ -56,7 +54,7 @@ def orb_mapmerge(map1, map2, transform=False):
         dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
         M, mask = cv2.estimateAffine2D(dst_pts, src_pts, confidence=0.999, ransacReprojThreshold=5.0, refineIters=30)
-        return apply_warp(map2, M)
+        return apply_warp(map2, M), M
     except:
         # failed merge
         print("MERGE FAILED: Returning Original Map")
