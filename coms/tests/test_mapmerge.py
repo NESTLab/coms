@@ -42,6 +42,7 @@ class TestMerge(unittest.TestCase):
         for _ in range(num_trials):
             map1, map2, map2_transform = recover_transformation(sift_mapmerge)
             ious.append(acceptance_index(map1, map2_transform))
+        print("SIFT MIOU", np.mean(ious))
         self.assertGreaterEqual(np.mean(ious), target_iou)
         self.assertTrue(not np.alltrue(map2_transform == UNKNOWN))
 
@@ -53,6 +54,7 @@ class TestMerge(unittest.TestCase):
         for _ in range(num_trials):
             map1, map2, map2_transform = recover_transformation(orb_mapmerge)
             ious.append(acceptance_index(map1, map2_transform))
+        print("ORB MIOU", np.mean(ious))
         self.assertGreaterEqual(np.mean(ious), target_iou)
         self.assertTrue(not np.alltrue(map2_transform == UNKNOWN))
 
@@ -62,9 +64,9 @@ class TestMerge(unittest.TestCase):
         """
         ious = []
         for _ in range(num_trials):
-            map1, map2, map2_transform = recover_transformation(lambda m1, m2: hough_mapmerge(m1, m2, num=8, robust=True))
+            map1, map2, map2_transform = recover_transformation(lambda m1, m2: hough_mapmerge(m1, m2, num=11, robust=True))
             ious.append(acceptance_index(map1, map2_transform))
-        print("Mean IOU", np.mean(ious))
+        print("Hough MIOU", np.mean(ious))
         self.assertGreaterEqual(np.mean(ious), target_iou)
 
     def test_merge_padding(self: unittest) -> None:

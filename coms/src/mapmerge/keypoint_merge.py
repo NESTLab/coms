@@ -15,7 +15,7 @@ def sift_mapmerge(map1, map2, transform=False):
         kp1, desc1 = sift.detectAndCompute(merge_map1, None)  # TODO eval with and without blur
         kp2, desc2 = sift.detectAndCompute(merge_map2, None)
         index_params = dict(algorithm=0, trees=5)
-        search_params = dict(checks=500)
+        search_params = dict()
         flann = cv2.FlannBasedMatcher(index_params, search_params)
         matches = flann.knnMatch(desc1, desc2, k=2)
         good_matches = []
@@ -26,10 +26,11 @@ def sift_mapmerge(map1, map2, transform=False):
         src_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
         dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
 
-        M, mask = cv2.estimateAffine2D(dst_pts, src_pts, confidence=0.999, ransacReprojThreshold=5.0)
+        M, mask = cv2.estimateAffine2D(dst_pts, src_pts, confidence=0.999, ransacReprojThreshold=5.0, refineIters=30)
         return apply_warp(map2, M)
     except:
         # failed merge
+        print("MERGE FAILED: Returning Original Map")
         return np.ones_like(map2, dtype=np.uint8) * UNKNOWN
 
 
@@ -49,7 +50,7 @@ def orb_mapmerge(map1, map2, transform=False):
         good_matches = []
         for m, n in matches:
             # use slightly higher ratio for ORB
-            if m.distance < 0.75 * n.distance:
+            if m.distance < 0.8 * n.distance:
                 good_matches.append(m)
         src_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
         dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
@@ -58,5 +59,6 @@ def orb_mapmerge(map1, map2, transform=False):
         return apply_warp(map2, M)
     except:
         # failed merge
+        print("MERGE FAILED: Returning Original Map")
         return np.ones_like(map2, dtype=np.uint8) * UNKNOWN
     
