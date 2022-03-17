@@ -16,8 +16,9 @@ def mapmerge_pipeline(map1, map2, method="hough", scale_process=False, median_pr
     args: 
     - map1 (original map)
     - map2 (foreign map, the one to be transformed onto map1)
-    - method: one of ["sift", "orb"]
-    - scale_fix: boolean, whether or not to attempt scale-adjusted merge
+    - method: one of ["sift", "orb", "hough"]. Default: "hough"
+    - scale_process: boolean, whether or not to run merges with rescaled maps for finer results (at cost of speed). Default: False
+    - median_process: whether or not to apply median filter to reduce noise. Default: True
     """
     merge_fn = None
     if method == "sift":
