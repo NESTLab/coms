@@ -72,7 +72,7 @@ def median_filter(map, ksize=3):
     median filter image
     """
     src = np.copy(map)
-    median = cv2.medianBlur(src, ksize=3)
+    median = cv2.medianBlur(src, ksize=ksize)
     return median
 
 def detect_fault(map1, map2, merged):

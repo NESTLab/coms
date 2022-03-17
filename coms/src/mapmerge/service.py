@@ -5,6 +5,9 @@ import numpy as np
 from mapmerge.keypoint_merge import sift_mapmerge, orb_mapmerge
 from mapmerge.merge_utils import resize_map, combine_aligned_maps, acceptance_index
 
+# SELECT SCALES TO USE IN SCALE PROCESS (Test-Time Augmentation)
+SCALES = [0.5, 0.75, 1, 1.25, 2.0]  # classic scale regime for TTA
+SCALES_FAST = [0.5, 0.75, 1, 1.25]  # exclude 2x scale for faster runtime
 
 def mapmerge_pipeline(map1, map2, method="hough", scale_process=False, median_process=True):
     """
@@ -27,7 +30,7 @@ def mapmerge_pipeline(map1, map2, method="hough", scale_process=False, median_pr
     if scale_process:
         ious = []
         merges = []
-        for scale in [0.5, 0.75, 1, 1.25, 2.0]:
+        for scale in SCALES_FAST:
             map1_scale = resize_map(map1, dsize=(int(map1.shape[0] * scale), int(map1.shape[1] * scale)))
             map2_scale = resize_map(map2, dsize=(int(map2.shape[0] * scale), int(map2.shape[1] * scale)))
             if median_process:
@@ -41,8 +44,11 @@ def mapmerge_pipeline(map1, map2, method="hough", scale_process=False, median_pr
             merges.append(merged_map)
         return merges[np.argmax(ious)]
     else:
+        M = None
         if median_process:
-            map1, map2 = median_filter(map1), median_filter(map2)
-        transformed_map2, M = merge_fn(map1, map2)
+            _, M = merge_fn(median_filter(map1), median_filter(map2))
+        else:
+            _, M = merge_fn(map1, map2)
+        transformed_map2 = apply_warp(map2, M)
         merged_map = combine_aligned_maps(transformed_map2, map1)
         return merged_map

@@ -27,8 +27,11 @@ def recover_transformation(method="hough", map=INTEL_TEST_MAP, fixed_angle=None,
 
     merge_fn: function with signature (map1: ndarray, map2: ndarray) --> map2_transform
         -- i.e. a function that finds a transformation from map2 onto map 1
+    map: numpy map to perform tests on
+    fixed angle: float indicating the angle of rotation for augmentation. if None, this is selected randomly.
+    scale_process: boolean indicating if multi-scale merge should be performed
 
-    output: map1, map2, map2'
+    output: map1, map2, map2' (map2 transformed to be in line with map1)
     """
     map1 = map  # original map
     map2, _ = augment_map(map, shift_limit=0.03, rotate_limit=360, fixed_angle=fixed_angle, fixed_dx=0.03, fixed_dy=0.03)  # augmented map
@@ -60,9 +63,9 @@ class TestMerge(unittest.TestCase):
         self.assertGreaterEqual(np.mean(ious), target_iou)
         self.assertTrue(not np.alltrue(map2_transform == UNKNOWN))
 
-    def test_hough_merge(self: unittest, target_iou: float = 0.8) -> None:
+    def test_hough_merge(self: unittest, target_iou: float = 0.9) -> None:
         """
-        Hough merge IoU should be > 0.8 for all transformations
+        Hough merge IoU should be > 0.9 for all transformations
         """
         ious = []
         for i in range(NUM_TRIALS):
@@ -77,25 +80,25 @@ class TestMerge(unittest.TestCase):
         """
         # first with hough
         noscale_ious = []
-        for i in range(NUM_TRIALS // 2):
+        for i in range(NUM_TRIALS):
             map1, map2, map2_transform = recover_transformation(method="hough", fixed_angle=TEST_ANGLES[i])
             noscale_ious.append(acceptance_index(map1, map2_transform))
         scale_ious = []
-        for i in range(NUM_TRIALS // 2):
+        for i in range(NUM_TRIALS):
             map1, map2, map2_transform = recover_transformation(method="hough", fixed_angle=TEST_ANGLES[i], scale_process=True)
             scale_ious.append(acceptance_index(map1, map2_transform))
-        print(f"Hough IoU: {np.mean(noscale_ious)}, Hough+Scale IoU: {np.mean(scale_ious)} ")
+        print(f"Hough IoU: {np.mean(noscale_ious)}, Hough+Scale IoU: {np.mean(scale_ious)}")
         self.assertGreaterEqual(np.mean(scale_ious), np.mean(noscale_ious))
         # try KP method as well
         noscale_ious = []
-        for i in range(NUM_TRIALS // 2):
+        for i in range(NUM_TRIALS):
             map1, map2, map2_transform = recover_transformation(method="orb", fixed_angle=TEST_ANGLES[i])
             noscale_ious.append(acceptance_index(map1, map2_transform))
         scale_ious = []
-        for i in range(NUM_TRIALS // 2):
+        for i in range(NUM_TRIALS):
             map1, map2, map2_transform = recover_transformation(method="orb", fixed_angle=TEST_ANGLES[i], scale_process=True)
             scale_ious.append(acceptance_index(map1, map2_transform))
-        print(f"KP IoU: {np.mean(noscale_ious)}, KP+Scale IoU: {np.mean(scale_ious)} ")
+        print(f"KP IoU: {np.mean(noscale_ious)}, KP+Scale IoU: {np.mean(scale_ious)}")
         self.assertGreaterEqual(np.mean(scale_ious), np.mean(noscale_ious))
 
     def test_merge_padding(self: unittest) -> None:
